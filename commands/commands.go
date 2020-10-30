@@ -25,7 +25,7 @@ func (c *Command) GetRestriction() (min, max int) {
 		if a[0] == '<' {
 			min++
 			max++
-		} else {
+		} else if a[0] == '[' {
 			max++
 		}
 	}
@@ -101,7 +101,7 @@ func NewHandler() {
 			"info - shows all registered directories",
 			"clear - deletes all directories",
 		},
-		argsStruct: "[dirName/info] -rm",
+		argsStruct: "[dirName/info/clear] -rm",
 		run: func() {
 			var dir string
 
@@ -113,8 +113,11 @@ func NewHandler() {
 
 			if dir == "clear" {
 				Confirm()
+				Cf.TemplatePaths = map[string]bool{}
 				fmt.Println("Big boy big CLEANUP is DONE")
+				return
 			} else if dir == "info" {
+				fmt.Println("Template paths:")
 				for k := range Cf.TemplatePaths {
 					fmt.Printf("\t%s\n", k)
 				}
@@ -122,13 +125,21 @@ func NewHandler() {
 			} else if !Exists(dir) {
 				Terminate("How em i supposed to add DIRECTORY that DOES NOT EXIST?!")
 			} else if !IsAccessable(dir) {
-				Terminate("Dude, this ConfigFile you gave me CANNOT BE ACCESSED!")
+				Terminate("Ops, DIRECTORY you gave me CANNOT BE ACCESSED!")
 			}
 
+			_, ok := Cf.TemplatePaths[dir]
+
 			if Labels["-rm"] {
+				if !ok {
+					Terminate("No such directory in the list.")
+				}
 				delete(Cf.TemplatePaths, dir)
 				fmt.Printf("%s removed from templates", dir)
 			} else {
+				if ok {
+					Terminate("I already have this directory in list.")
+				}
 				Cf.TemplatePaths[dir] = true
 				fmt.Printf("%s added to templates", dir)
 			}
@@ -136,7 +147,7 @@ func NewHandler() {
 	})
 
 	handler.RegisterCommand(Command{
-		name:        "generate",
+		name:        "gen",
 		description: "updates all templates you annotated and creates new ones if needed",
 		help: []string{
 			"- updates templates in current directory, command creates new file for templates",
@@ -166,12 +177,13 @@ func NewHandler() {
 			}
 
 			for range dirs {
-				for _, v := range <-rec {
+				a := <-rec
+				for i, v := range a {
 					if _, ok := Templates[v.name]; ok && v.err == -1 {
 						v.err = Duplicate
 					}
 					HandleSyntaxError(v.ErrData)
-					Templates[v.name] = &v
+					Templates[v.name] = &a[i]
 				}
 			}
 

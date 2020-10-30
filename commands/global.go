@@ -18,12 +18,16 @@ var Labels map[string]bool
 var Args []string
 
 // RunCommand ...
-func RunCommand() {
+func RunCommand(arg string) {
+
+	CommandHandler.RunCommand(arg)
+}
+
+// LoadDirList ...
+func LoadDirList() {
 	dir, err := os.Getwd()
 	CheckError("cannot access working directory", err)
 	Dirs = GetDirList(dir)
-
-	CommandHandler.RunCommand(ParseArgs())
 }
 
 // ParseArgs sorts args to labels, arguments, and other

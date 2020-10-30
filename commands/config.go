@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path"
 )
 
 // ConfigFile is name of config file
-const ConfigFile = "config.json"
+var ConfigFile = "config.json"
 
 // Config stores all configuration
 type Config struct {
@@ -28,6 +29,9 @@ var Cf Config = Config{
 
 // LoadConfig creates new if doesn't exist
 func LoadConfig() {
+	if Labels["-l"] {
+		ConfigFile = path.Join(Dirs[0], "gogen-"+ConfigFile)
+	}
 	if !Exists(ConfigFile) {
 		CheckError("unable to create default config", SaveConfig())
 	} else {

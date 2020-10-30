@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -90,7 +89,6 @@ func NewTemplate(rules, content string, imports []string, adr ErrData) Template 
 	}
 
 	for _, v := range imports {
-		fmt.Println(v[1 : len(v)-1])
 		idx := strings.Index(content, v[1:len(v)-1]+".")
 		if idx == -1 {
 			continue
@@ -110,6 +108,5 @@ func (t *Template) Generate(subs []string) string {
 	for i, a := range t.args {
 		result = strings.Replace(result, a, subs[i], -1)
 	}
-	result = strings.Replace(result, Cf.PrefixSpecifier, subs[len(subs)-1], -1)
 	return "\n" + result
 }

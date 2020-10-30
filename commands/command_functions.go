@@ -43,7 +43,7 @@ func CreateTemplatesInDir(dir string) {
 	}
 
 	requests := []Rules{}
-
+	var pack string
 	for _, inf := range infos {
 
 		path := path.Join(dir, inf.Name())
@@ -51,7 +51,11 @@ func CreateTemplatesInDir(dir string) {
 			continue
 		}
 
-		requests = append(requests, CollectFileTemplateRequests(path)...)
+		requests = append(requests, CollectFileTemplateRequests(path, &pack)...)
+	}
+
+	if pack == "" {
+		Terminate("unable to resolve package name in directory: " + dir)
 	}
 
 	genFilePath := path.Join(dir, Cf.GeneratedFile)
@@ -68,12 +72,9 @@ func CreateTemplatesInDir(dir string) {
 	}
 
 	requests = FilterDuplipcates(requests)
-
 	for _, r := range requests {
 		HandleSyntaxError(r.ErrData)
 	}
-
-	resultContent := "package " + GetDirName(dir) + "\n"
 	code := ""
 	imports := map[string]bool{}
 	for _, r := range requests {
@@ -82,13 +83,13 @@ func CreateTemplatesInDir(dir string) {
 		code += temp.Generate(r.args)
 	}
 
-	err = ioutil.WriteFile(genFilePath, []byte(resultContent+FormatImports(imports)+code), 0644)
+	err = ioutil.WriteFile(genFilePath, []byte(pack+FormatImports(imports)+code), 0644)
 	Warming("unable to modify template file", err)
 	return
 }
 
 // CollectFileTemplateRequests ...
-func CollectFileTemplateRequests(path string) (requests []Rules) {
+func CollectFileTemplateRequests(path string, pack *string) (requests []Rules) {
 	file, err := os.Open(path)
 	if Warming("skipping file, it cannot be opened", err) {
 		return
@@ -101,6 +102,10 @@ func CollectFileTemplateRequests(path string) (requests []Rules) {
 		lineIdx++
 		line := scanner.Text()
 		if !strings.Contains(line, Cf.TemplateRequest) {
+			if *pack == "" && StartsWith(Bulkremove("\n\r\t", line), "package") {
+				fmt.Println(line)
+				*pack = line + "\n"
+			}
 			continue
 		}
 		start, end := len(Cf.TemplateRequest), strings.Index(line, ">")+1
@@ -111,7 +116,7 @@ func CollectFileTemplateRequests(path string) (requests []Rules) {
 
 		if req.err == -1 {
 			if val, ok := Templates[req.name]; ok {
-				if len(val.args)+1 != len(req.args) {
+				if len(val.args) != len(req.args) {
 					req.err = IncorrectArgs
 				}
 			} else {
@@ -122,7 +127,7 @@ func CollectFileTemplateRequests(path string) (requests []Rules) {
 		requests = append(requests, req)
 
 	}
-
+	fmt.Println(requests)
 	return
 }
 
@@ -138,9 +143,9 @@ func FormatImports(a map[string]bool) string {
 	if len(a) == 0 {
 		return ""
 	}
-	str := "import (\n"
+	str := "\nimport (\n"
 	for k := range a {
-		str += k + "\n"
+		str += "\t" + k + "\n"
 	}
 	return str + ")"
 }
@@ -156,14 +161,16 @@ func Bulkremove(chars string, orig string) string {
 // ExtractImports parses string to slice of package names
 func ExtractImports(str string) (imports []string) {
 	parts := strings.Split(str, "import")
-	if len(parts) == 0 {
+
+	if len(parts) < 2 {
+
 		return
 	}
 
 	for _, i := range parts[1:] {
 		start, end := strings.IndexRune(i, '(')+1, strings.IndexRune(i, ')')
 		var str []string
-		if end == -1 {
+		if end == -1 || start > strings.IndexRune(i, '\n') {
 			str = []string{i[1:strings.IndexRune(i, '\n')]}
 		} else {
 			str = strings.Split(i[start:end], "\n")
@@ -178,7 +185,7 @@ func ExtractImports(str string) (imports []string) {
 		}
 
 	}
-
+	fmt.Printf("%q", imports)
 	return
 }
 
@@ -201,7 +208,6 @@ func ParseTemplatesInDir(dir string) (res []Template) {
 
 		res = append(res, ParseTemplateFile(path.Join(dir, info.Name()))...)
 	}
-
 	return
 }
 
@@ -227,9 +233,6 @@ func ParseTemplateFile(path string) (res []Template) {
 	}
 
 	imports := ExtractImports(templates[0])
-	for _, v := range imports {
-		fmt.Printf("%q\n", v)
-	}
 
 	for _, t := range templates[1:] {
 		idx := strings.Index(t, ">") + 1
@@ -238,7 +241,7 @@ func ParseTemplateFile(path string) (res []Template) {
 		if end == -1 {
 			end = len(t)
 		}
-		temp := NewTemplate(key, t[start:], imports, ErrData{path, GetErrorLine(path, key, content), -1})
+		temp := NewTemplate(key, t[start:end], imports, ErrData{path, GetErrorLine(path, key, content), -1})
 		res = append(res, temp)
 	}
 	return

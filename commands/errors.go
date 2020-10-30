@@ -117,7 +117,7 @@ func HandleSyntaxError(adr ErrData) {
 	case IncorrectRules:
 		er("the template rules signature is incorrect, example signature: " + ValidFormat)
 	case IncorrectArgs:
-		er("you supplied incorrect amount of arguments, you may be missing name prefix, valid syntax: " + ValidFormat)
+		er("you supplied incorrect amount of arguments")
 	case Duplicate:
 		er("duplicate template")
 	case Undefined:

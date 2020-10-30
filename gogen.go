@@ -5,11 +5,12 @@ import (
 )
 
 func main() {
+	name := commands.ParseArgs()
 	commands.LoadConfig()
 
 	commands.NewHandler()
 
-	commands.RunCommand()
+	commands.RunCommand(name)
 
 	commands.SaveConfig()
 }
