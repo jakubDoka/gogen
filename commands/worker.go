@@ -10,11 +10,11 @@ type O = string
 // CAP is template constant
 const CAP = 0
 
-//<<< Worker<I, O, CAP>
+//<<< Worker<I, O, CAP, NM>
 
-// _prefixWorker accepts data though channel and returns result from procedure
+// NMWorker accepts data though channel and returns result from procedure
 // also check for termination data with help of terminate argument
-func _prefixWorker(rec chan O, procedure func(I) O, terminate func(I) bool, omit bool) chan I {
+func NMWorker(rec chan O, procedure func(I) O, terminate func(I) bool, omit bool) chan I {
 	c := make(chan I, CAP)
 	closed := false
 	go func() {

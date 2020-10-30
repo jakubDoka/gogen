@@ -191,6 +191,18 @@ func NewHandler() {
 				t <- ""
 			}
 
+			/*dirs := []string{}
+			for k := range Cf.TemplatePaths {
+				dirs = append(dirs, GetDirList(k)...)
+			}*/
+
+			/*for _, d := range dirs {
+				a := ParseTemplatesInDir(d)
+				for i, v := range a {
+					Templates[v.name] = &a[i]
+				}
+			}*/
+
 			fmt.Println("Generating code...")
 
 			dirs = Dirs
@@ -209,10 +221,14 @@ func NewHandler() {
 					}, false)
 				}
 				for i, d := range dirs {
-					threads[i] <- d
+					threads[i%cores] <- d
 				}
 				for _, t := range threads {
 					t <- ""
+				}
+
+				for _, d := range dirs {
+					CreateTemplatesInDir(d)
 				}
 			} else {
 				CreateTemplatesInDir(dirs[0])

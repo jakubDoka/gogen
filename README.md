@@ -1,11 +1,22 @@
- Welcome to the gogen tutorial, here i will try to explain how
- to use this simple tool to use golang like it has generics
+ #gogen (golang code generator)
 
- i assume that if you opened this file you already installed gogen
- and used some commands, so lets talk about how gogen can be used
+ Gogen is a very simple code generator, It does not force you to write code that would
+ not be compilable, you can use comments to annotate your templates. Main reason why i 
+ have created gogen is to substitute missing generics golang needs so match. All you need
+ to do to install gogen is building this repository on your os and adding the root to your
+ path.
+ 
+ Sor those that are not sure:
+ ```
+ git clone https://github.com/jakubDoka/gogen
+ cd gogen
+ go build gogen.go
+ ``` 
 
- 1. global state
- Simplest wey to use gogen is to add executable to your path environment
+
+ ## global state
+
+ Simplest wey to use gogen is to add directory with executable to your path environment
  variable and use it in every your project. You can keep your templates
  global this way and use them in any project. Because gogen cannot scan
  all storage in your computer (or cna but it would be slow), you have to
@@ -116,9 +127,15 @@ func (v *VecF) Clear() {
 ```
 
 Lovely, our templates are used as they should and notice that last
-argument wos substituted for a strange the part of a name, and even 
+argument was substituted for a strange the part of a name, and even 
 comments and strings. Its shows beautifully how stupid yet useful 
 gogen is. 
 
 Finally if you change your template just use `gogen gen` and 
 files will be regenerated.
+
+## local state
+
+Other way around is making local configuration. That is not a problem with gogen, 
+all you need to do us add `-l` flag to your commands. Gogen will create local config 
+file you can then edit. 

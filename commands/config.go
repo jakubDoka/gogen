@@ -13,7 +13,7 @@ var ConfigFile = "config.json"
 // Config stores all configuration
 type Config struct {
 	TemplateStart, TemplateEnd, TemplateRequest,
-	PrefixSpecifier, GeneratedFile string
+	GeneratedFile string
 	TemplatePaths map[string]bool
 }
 
@@ -22,7 +22,6 @@ var Cf Config = Config{
 	TemplateRequest: "//gen",
 	TemplateStart:   "//<<<",
 	TemplateEnd:     "//>>>",
-	PrefixSpecifier: "_prefix",
 	GeneratedFile:   "gogen-output.go",
 	TemplatePaths:   map[string]bool{},
 }
