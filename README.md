@@ -1,4 +1,4 @@
- #gogen (golang code generator)
+ # gogen (golang code generator)
 
  Gogen is a very simple code generator, It does not force you to write code that would
  not be compilable, you can use comments to annotate your templates. Main reason why i 
@@ -23,11 +23,7 @@
  specify directories where it should search for them. Another thing you have
  to do is annotating all your template files, so lets show how template file
  should look like
-
-//gogen_template // notice this comment annotation, to speed things up gogen looks for this first and ignores file if its missing
-package example // comment does not apply here, i just commented it so ide will not show me an error
-
-
+ 
 ```go
 //gogen_template
 package example
