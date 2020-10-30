@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -106,19 +108,20 @@ func NewHandler() {
 			var dir string
 
 			if len(Args) == 0 {
-				dir = Dirs[0]
+				dir = WDir
 			} else {
 				dir = Args[0]
 			}
 
 			if dir == "clear" {
 				Confirm()
-				Cf.TemplatePaths = map[string]bool{}
+				Cf.TemplateDirectories = map[string]bool{}
+				Cf.TemplateFiles = map[string]bool{}
 				fmt.Println("Big boy big CLEANUP is DONE")
 				return
 			} else if dir == "info" {
 				fmt.Println("Template paths:")
-				for k := range Cf.TemplatePaths {
+				for k := range Cf.TemplateDirectories {
 					fmt.Printf("\t%s\n", k)
 				}
 				Exit("Thats all i have so far.")
@@ -128,19 +131,49 @@ func NewHandler() {
 				Terminate("Ops, DIRECTORY you gave me CANNOT BE ACCESSED!")
 			}
 
-			_, ok := Cf.TemplatePaths[dir]
+			stats, err := os.Stat(dir)
+			CheckError("unable to determinate whether path points to directory or file", err)
+
+			dir, _ = filepath.Abs(dir)
+
+			isDir := stats.IsDir()
+			var ok bool
+
+			if isDir {
+				_, ok = Cf.TemplateDirectories[dir]
+			} else {
+				_, ok = Cf.TemplateFiles[dir]
+			}
 
 			if Labels["-rm"] {
 				if !ok {
-					Terminate("No such directory in the list.")
+					Terminate("No such directory/file in the list.")
 				}
-				delete(Cf.TemplatePaths, dir)
+				if isDir {
+					delete(Cf.TemplateDirectories, dir)
+				} else {
+					delete(Cf.TemplateFiles, dir)
+				}
 				fmt.Printf("%s removed from templates", dir)
 			} else {
 				if ok {
-					Terminate("I already have this directory in list.")
+					Terminate("I already have this directory/file in list.")
 				}
-				Cf.TemplatePaths[dir] = true
+
+				if d, ok := IsIncluded(dir, Cf.TemplateDirectories); ok {
+					Terminate("this file is already included by " + d)
+				}
+
+				if isDir {
+					FilterIncluded(dir, Cf.TemplateDirectories)
+					FilterIncluded(dir, Cf.TemplateFiles)
+
+					Cf.TemplateDirectories[dir] = true
+				} else {
+
+					Cf.TemplateFiles[dir] = true
+				}
+
 				fmt.Printf("%s added to templates", dir)
 			}
 		},
@@ -168,12 +201,19 @@ func NewHandler() {
 				}, false)
 			}
 			dirs := []string{}
-			for k := range Cf.TemplatePaths {
-				dirs = append(dirs, GetDirList(k)...)
+			for k := range Cf.TemplateDirectories {
+				dirs = append(dirs, GetDirList(k, Cf.TemplateDirMaxDepth)...)
 			}
 
 			for i, dir := range dirs {
 				threads[i%cores] <- dir
+			}
+
+			for f := range Cf.TemplateFiles {
+				a := ParseTemplateFile(f, false)
+				for i, v := range a {
+					Templates[v.name] = &a[i]
+				}
 			}
 
 			for range dirs {
@@ -191,23 +231,12 @@ func NewHandler() {
 				t <- ""
 			}
 
-			/*dirs := []string{}
-			for k := range Cf.TemplatePaths {
-				dirs = append(dirs, GetDirList(k)...)
-			}*/
-
-			/*for _, d := range dirs {
-				a := ParseTemplatesInDir(d)
-				for i, v := range a {
-					Templates[v.name] = &a[i]
-				}
-			}*/
-
 			fmt.Println("Generating code...")
 
-			dirs = Dirs
 			if len(Args) == 1 {
-				dirs = GetDirList(Args[0])
+				dirs = GetDirList(Args[0], Cf.WorkingDirMaxDepth)
+			} else {
+				dirs = GetDirList(WDir, Cf.WorkingDirMaxDepth)
 			}
 
 			if Labels["-r"] {
@@ -231,10 +260,10 @@ func NewHandler() {
 					CreateTemplatesInDir(d)
 				}
 			} else {
-				CreateTemplatesInDir(dirs[0])
+				CreateTemplatesInDir(WDir)
 			}
 
-			fmt.Println("Finished... wuf.")
+			fmt.Println("Finished.")
 		},
 	})
 

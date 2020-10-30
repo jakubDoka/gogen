@@ -7,7 +7,7 @@ import (
 func main() {
 	name := commands.ParseArgs()
 
-	commands.LoadDirList()
+	commands.LoadWorkingDirectory()
 
 	commands.LoadConfig()
 

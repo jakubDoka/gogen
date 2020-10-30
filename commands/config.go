@@ -14,22 +14,26 @@ var ConfigFile = "config.json"
 type Config struct {
 	TemplateStart, TemplateEnd, TemplateRequest,
 	GeneratedFile string
-	TemplatePaths map[string]bool
+	TemplateDirectories, TemplateFiles      map[string]bool
+	TemplateDirMaxDepth, WorkingDirMaxDepth int
 }
 
 // Cf stores configuration
 var Cf Config = Config{
-	TemplateRequest: "//gen",
-	TemplateStart:   "//<<<",
-	TemplateEnd:     "//>>>",
-	GeneratedFile:   "gogen-output.go",
-	TemplatePaths:   map[string]bool{},
+	TemplateRequest:     "//gen",
+	TemplateStart:       "//<<<",
+	TemplateEnd:         "//>>>",
+	GeneratedFile:       "gogen-output.go",
+	TemplateDirectories: map[string]bool{},
+	TemplateFiles:       map[string]bool{},
+	TemplateDirMaxDepth: 500,
+	WorkingDirMaxDepth:  1000,
 }
 
 // LoadConfig creates new if doesn't exist
 func LoadConfig() {
 	if Labels["-l"] {
-		ConfigFile = path.Join(Dirs[0], "gogen-"+ConfigFile)
+		ConfigFile = path.Join(WDir, "gogen-"+ConfigFile)
 	}
 	if !Exists(ConfigFile) {
 		CheckError("unable to create default config", SaveConfig())

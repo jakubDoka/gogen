@@ -183,7 +183,6 @@ func ExtractImports(str string) (imports []string) {
 		}
 
 	}
-	fmt.Printf("%q", imports)
 	return
 }
 
@@ -204,20 +203,20 @@ func ParseTemplatesInDir(dir string) (res []Template) {
 			continue
 		}
 
-		res = append(res, ParseTemplateFile(path.Join(dir, info.Name()))...)
+		res = append(res, ParseTemplateFile(path.Join(dir, info.Name()), true)...)
 	}
 	return
 }
 
 // ParseTemplateFile takes all templates from file and saves them to heap
-func ParseTemplateFile(path string) (res []Template) {
+func ParseTemplateFile(path string, checkAnnotation bool) (res []Template) {
 	bytes, err := ioutil.ReadFile(path)
 	if Warming("skipping file, it cannot be opened, nor read", err) {
 		return
 	}
 
 	content := string(bytes)
-	if !StartsWith(content, TemplateAnnotation) {
+	if checkAnnotation && !StartsWith(content, TemplateAnnotation) {
 		if !StartsWith(content, IgnoreAnnotation) {
 			Warming("skipping file, you can annotate file with '"+IgnoreAnnotation+"' if its intentional",
 				errors.New("file is not annotated"))

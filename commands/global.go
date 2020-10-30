@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -10,6 +12,8 @@ var Templates = map[string]*Template{}
 
 // Dirs is list of dirs in working directory
 var Dirs []string
+
+var WDir string
 
 // Labels Stores all labels inputted as arguments like -r and so on
 var Labels map[string]bool
@@ -23,11 +27,11 @@ func RunCommand(arg string) {
 	CommandHandler.RunCommand(arg)
 }
 
-// LoadDirList ...
-func LoadDirList() {
-	dir, err := os.Getwd()
+// LoadWorkingDirectory ...
+func LoadWorkingDirectory() {
+	var err error
+	WDir, err = os.Getwd()
 	CheckError("cannot access working directory", err)
-	Dirs = GetDirList(dir)
 }
 
 // ParseArgs sorts args to labels, arguments, and other
@@ -52,13 +56,18 @@ func ParseArgs() string {
 }
 
 // GetDirList lists all directories in range
-func GetDirList(path string) (dirs []string) {
+func GetDirList(path string, limit int) (dirs []string) {
 	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			dirs = append(dirs, path)
+			if len(dirs) == limit {
+				Warming("not continuing to the deeper directories",
+					fmt.Errorf("exceeded limit of %d, if you want to go deeper, set it in config"))
+				return errors.New("going too deep")
+			}
 		}
 		return err
 	})

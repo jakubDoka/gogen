@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 )
@@ -19,6 +20,32 @@ func GetDirName(path string) string {
 	}
 
 	return path
+}
+
+// IsIncluded returns whether path is included
+func IsIncluded(path string, paths map[string]bool) (string, bool) {
+	for k := range paths {
+		if StartsWith(path, k) {
+			return k, true
+		}
+	}
+
+	return "", false
+}
+
+// FilterIncluded removes already included paths from map
+func FilterIncluded(path string, paths map[string]bool) {
+	toRemove := []string{}
+	for p := range paths {
+		if StartsWith(p, path) {
+			toRemove = append(toRemove, p)
+		}
+	}
+
+	for _, v := range toRemove {
+		delete(paths, v)
+		fmt.Println("Redundant path " + v + " removed.")
+	}
 }
 
 // IsGoFile ...
