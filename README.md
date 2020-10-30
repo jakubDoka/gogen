@@ -1,4 +1,4 @@
- #gogen (golang code generator)
+ # gogen (golang code generator)
 
  Gogen is a very simple code generator, It does not force you to write code that would
  not be compilable, you can use comments to annotate your templates. Main reason why i 
