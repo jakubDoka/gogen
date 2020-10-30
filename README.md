@@ -83,13 +83,13 @@ func (v *Vec__) Clear() {
 //--snip--
 ```
 
- And thats about it, just write this wherever you like, within the package you need it
- lets also check out what will happen if you use folloving commands.
+ And thats about it, just write this wherever you like, within the package you need it.
+ Lets also check out what will happen if you use folloving commands.
 ```
-$ gogen add
-$ gogen gen
+gogen add
+gogen gen
 ```
- If you done this all in the same directory where you have all your files, new file
+ If you done this in the same directory where you have templates and requests, new file
  named "gogen-output.go" should appear. Now lets see whats inside.
 
 ```go
@@ -99,13 +99,13 @@ import (
   	"fmt"
 )
 
-// IPrint prints an value with adition of annoing message
-// its also absolutely useles
+// IPrint prints an value with addition of annoying message
+// its also absolutely useless
 func IPrint(value int) {
 	fmt.Println("look at me i can print int like this:", value)
 }
 
-// VecF on the other hand is lot more usefull
+// VecF on the other hand is lot more useful
 type VecF struct {
 	slice []float64
 }
