@@ -34,6 +34,12 @@ var Cf Config = Config{
 func LoadConfig() {
 	if Labels["-l"] {
 		ConfigFile = path.Join(WDir, "gogen-"+ConfigFile)
+	} else {
+		val, ok := os.LookupEnv("GOPATH")
+		if !ok {
+			Terminate("Your GOPATH environment variable is missing, i cannot globally operate without it")
+		}
+		ConfigFile = path.Join(val, ConfigFile)
 	}
 	if !Exists(ConfigFile) {
 		CheckError("unable to create default config", SaveConfig())
