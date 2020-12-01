@@ -37,7 +37,7 @@ func LoadWorkingDirectory() {
 // ParseArgs sorts args to labels, arguments, and other
 func ParseArgs() string {
 	if len(os.Args) == 1 {
-		Terminate("Hello there! I em Golang code generator, but in short just gogen. Sey 'gogen help' to see what i offer.")
+		Terminate("Hello there! Sey 'gogen help' to see what i offer.")
 	}
 	Labels = map[string]bool{}
 	for _, arg := range os.Args[2:] {

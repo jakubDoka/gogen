@@ -26,12 +26,6 @@ func Terminate(message string) {
 	os.Exit(1)
 }
 
-// Exists returns whether file exist
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
-}
-
 // IsAccessable returns whethere file is accessable
 func IsAccessable(path string) bool {
 	stats, err := os.Stat(path)

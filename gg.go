@@ -1,11 +1,7 @@
 package main
 
-import (
-	"gogen/commands"
-)
-
 func main() {
-	name := commands.ParseArgs()
+	/*name := commands.ParseArgs()
 
 	commands.LoadWorkingDirectory()
 
@@ -15,5 +11,5 @@ func main() {
 
 	commands.RunCommand(name)
 
-	commands.SaveConfig()
+	commands.SaveConfig()*/
 }
