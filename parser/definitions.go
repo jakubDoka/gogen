@@ -99,7 +99,7 @@ o:
 		for k, v := range imports {
 			ln = len(k)
 
-			if !str.IsTheIdent(cont, k, i) {
+			if !str.IsTheImp(cont, k, i) {
 				continue
 			}
 

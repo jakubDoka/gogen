@@ -21,6 +21,12 @@ func IsTheIdent(str, ident string, idx int) bool {
 	return len(str) >= idx+l && str[idx:idx+l] == ident && IsSliceIdent(str, idx, l)
 }
 
+// IsTheImp return whether there is import on given index
+func IsTheImp(str, ident string, idx int) bool {
+	l := len(ident)
+	return IsTheIdent(str, ident, idx) && idx+l < len(str) && str[idx+l] == '.'
+}
+
 // IsSliceIdent returns whether slice of string is identifier
 // assuming content of slice is valid identifier
 func IsSliceIdent(str string, idx, ln int) bool {

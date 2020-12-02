@@ -138,6 +138,7 @@ func (p *Pack) CollectGenRequests() (req dirs.Paragraph, imports Imp) {
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Generators) {
 			for _, line := range block.Raw {
+				line.Content = str.RemInv(line.Content)
 				if str.StartsWith(line.Content, "!") {
 					imports.Add(line.Content[1:])
 				} else {

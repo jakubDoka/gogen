@@ -39,7 +39,7 @@ func PackImport(p string) string {
 // There is no recursion.
 func ListFilePaths(p string) (ps []string, err error) {
 	return ListPaths(p, func(i os.FileInfo) bool {
-		return !i.IsDir()
+		return !i.IsDir() && str.EndsWith(i.Name(), ".go")
 	})
 }
 

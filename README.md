@@ -1,137 +1,90 @@
  # gogen (golang code generator)
 
- Gogen is a very simple code generator, It does not force you to write code that would
- not be compilable, you can use comments to annotate your templates. Main reason why i 
- have created gogen is to substitute missing generics golang needs so match. All you need
- to do to install gogen is building this repository on your os and adding the root to your
- path.
- 
- Sor those that are not sure:
- ```
- git clone https://github.com/jakubDoka/gogen
- cd gogen
- go build gogen.go
- ``` 
+ Gogen is a very simple code generator. It does not force you to write code that would not be compilable, nor wrap your code in comments. You use comments just as orientation for gogen. All you need to do to install gogen is building this repository on your os and adding the root of the repo to your path environment variable.
 
+# annotations
 
- ## global state
-
- Simplest wey to use gogen is to add directory with executable to your path environment
- variable and use it in every your project. You can keep your templates
- global this way and use them in any project. Because gogen cannot scan
- all storage in your computer (or cna but it would be slow), you have to
- specify directories where it should search for them. Another thing you have
- to do is annotating all your template files, so lets show how template file
- should look like
- 
-```go
-//gogen_template
-package example
-// T is template argument
-type T = int // the type of T is not important as long as you can compile signatures that use it
-//<<< Print<T, prefix>
-
-// prefixPrint prints an value with addition of annoying message
-// its also absolutely useless
-func prefixPrint(value T) {
-	fmt.Println("look at me i can print T like this:", value)
-}
-
-//<<< Vec<T, __>
-
-// Vec__ on the other hand is lot more usefull
-type Vec__ struct {
-	slice []T
-}
-
-// MakeVec__ creates new Vec__ with given cap and len
-func MakeVec__(cap, len int) Vec__ {
-	return Vec__{make([]T, cap, len)}
-}
-
-// Push appends value
-func (v *Vec__) Push(value T) {
-	v.slice = append(v.slice, value)
-}
-
-// Clear clears all values but should preserve cap
-func (v *Vec__) Clear() {
-	v.slice = v.slice[:0]
-}
-
-//>>> // this specifies end of template
-```
-
- You can also customize how you annotate by changing config file of gogen, 
- that is always created after first run. We can for example change prefix 
- to just "__". Mind that gogen, for now, does not differentiate between 
- part template specifier of fraction fo a name of your variable. For 
- instance if you have template T and you also use variable hashTable, 
- gogen will make it hashintable, but that should not be a problem because 
- you can name your template arguments how ewer you like and need.
-
- Now thats nice and all but how do we actually use our templates?
+Nothing can be done without annotations as parsing all your code as possible template would be inefficient. Gogen uses annotation blocks witch restrict what gogen should care about or what to ignore. Blocks then can have further annotations. Always close your blocks or they will get ignored.Lets start with a core piece, def-block.
 
 ```go
-//--snip-- <- snips are optional
-//gen Print<int, I>
-//gen Vec<float64, F>
-//--snip--
+//def(
+//rules Max<int, Ident>
+func Ident(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+//)
 ```
 
- And thats about it, just write this wherever you like, within the package you need it.
- Lets also check out what will happen if you use folloving commands.
-```
-gogen add
-gogen gen
-```
- If you done this in the same directory where you have templates and requests, new file
- named "gogen-output.go" should appear. Now lets see whats inside.
+Def block has a rules annotation, rules define how your template work. In this case int is a template argument that will get replaced when generating code. Likewise Ident will be replaced with identifier. As go does not have polymorphism you have to name function your self. Next is gen-block.
 
 ```go
-package example
+/*gen(
+	Max<float64, MaxF64>
+	Max<float32, MaxF32>
+	Max<byte, MaxB>
+)*/
+```
+gogen creates new file named gogen-output.go with following content
 
-import (
-  	"fmt"
-)
+```go
+package main
 
-// IPrint prints an value with addition of annoying message
-// its also absolutely useless
-func IPrint(value int) {
-	fmt.Println("look at me i can print int like this:", value)
+func MaxF64(a, b float64) float64 {
+if a > b {
+return a
+}
+return b
 }
 
-// VecF on the other hand is lot more useful
-type VecF struct {
-	slice []float64
+func MaxF32(a, b float32) float32 {
+if a > b {
+return a
+}
+return b
 }
 
-// MakeVecF creates new VecF with given cap and len
-func MakeVecF(cap, len int) VecF {
-	return VecF{make([]float64, cap, len)}
+func MaxB(a, b byte) byte {
+if a > b {
+return a
 }
-
-// Push appends value
-func (v *VecF) Push(value float64) {
-	v.slice = append(v.slice, value)
-}
-
-// Clear clears all values but should preserve cap
-func (v *VecF) Clear() {
-	v.slice = v.slice[:0]
+return b
 }
 ```
 
-Lovely, our templates are used as they should and notice that last
-argument was substituted for a strange the part of a name, and even 
-comments and strings. Its shows beautifully how stupid yet useful 
-gogen is. 
+This is how you can generate your templates, you have to tell what you need, but its already better then defining them all by hand, now you cna make a change to original and just rerun generation. Cross package generation is also supported. We have imp-block for this reason:
 
-Finally if you change your template just use `gogen gen` and 
-files will be regenerated.
+```go
+/*imp(
+	templates/max
+)*/
+```
 
-## local state
+You can then refer to the templates from package as `(package name).(template name)<...template arguments>`. in case you want to use external types in your templates you have to inform gogen about it:
 
-Other way around is making local configuration. That is not a problem with gogen, 
-all you need to do us add `-l` flag to your commands. Gogen will create local config 
-file you can then edit. 
+```go
+/*gen(
+	!libs/my_types
+	Max<my_types.Float64, MaxF64>
+	Max<my_types.Float32, MaxF32>
+)*/
+```
+
+Last type of block is ign-block and its for ignoring pieces of code. As gogen takes notes about all items in your package, so it can annotate all items with `(package name).` in case of external generation. You may be shadowing something and so if you are not willing to rename shadows you can wrap shadowed code in ign-block. In case you have some huge file in your package and you do not want gogen to bother with that you can put opened ign-block on a beginning of a file.
+
+# todo
+
+This is a section with listed features that should be implemented, contributors are welcomed
+
+support nested definitions
+
+make block syntax configurable
+
+make output file name configurable
+
+
+
+
+
