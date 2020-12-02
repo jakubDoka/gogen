@@ -5,6 +5,13 @@ import (
 	"reflect"
 )
 
+const (
+	hell int = iota
+	mel
+	cel
+	gel
+)
+
 // Bar ...
 type Bar struct {
 	reflect.Type

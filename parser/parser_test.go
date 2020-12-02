@@ -96,7 +96,15 @@ func TestCollectContent(t *testing.T) {
 	}
 
 	result := []string{"Hello", "Mom", "Hell", "Fri"}
-	resultBlock := BlockSlice{Definition, 3, 5}
+	resultBlock := BlockSlice{
+		Definition,
+		3,
+		5,
+		[]string{
+			"type SneakySneak struct {}",
+			"type OtherSneakySneak struct {}",
+		},
+	}
 
 	res, block := CollectContent(test)
 
@@ -106,10 +114,24 @@ func TestCollectContent(t *testing.T) {
 		}
 	}
 
-	if block[0] != resultBlock {
-		t.Errorf("%v != %v", resultBlock, block[0])
+	if !CompareBlocks(block[0], resultBlock) {
+		t.Errorf("%q != %q", resultBlock, block[0])
 	}
 
+}
+
+func CompareBlocks(a, b BlockSlice) (bl bool) {
+	if len(a.Raw) != len(b.Raw) || a.Start != b.Start || a.End != b.End || a.Type != b.Type {
+		return
+	}
+
+	for i, v := range a.Raw {
+		if b.Raw[i] != v {
+			return
+		}
+	}
+
+	return true
 }
 
 func TestNPack(t *testing.T) {

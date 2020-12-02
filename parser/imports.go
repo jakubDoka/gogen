@@ -61,14 +61,17 @@ func BuildImps(imports Imp, ignore string) string {
 func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
 	var inBlock bool
 	var current BlockSlice
-	for i, l := range raw {
-		l = str.RemInvStart(l)
+	for i, line := range raw {
+		l := str.RemInvStart(line)
 		if inBlock {
 			if ok, _ := IsBlockEnd(l); ok {
 				current.End = i
 				blocks = append(blocks, current)
+				current = BlockSlice{}
 
 				inBlock = false
+			} else {
+				current.Raw = append(current.Raw, line)
 			}
 			continue
 		} else {
@@ -82,11 +85,14 @@ func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
 		}
 
 		if ok, _ := str.IsGoDef(l); ok {
-			name := str.GoDefNm(l)
-			if name == "" { // its a struct method
-				continue
+			name := str.RemInv(str.GoDefNm(l))
+			if name == "" {
+				if str.EndsWith(str.RemInv(line), "(") { // multiline def
+					content = append(content, str.GoDefNms(raw[i+1:])...)
+				}
+			} else {
+				content = append(content, name)
 			}
-			content = append(content, name)
 		}
 	}
 
@@ -97,4 +103,5 @@ func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
 type BlockSlice struct {
 	Type       Block
 	Start, End int
+	Raw        []string
 }

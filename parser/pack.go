@@ -8,9 +8,10 @@ import (
 type Pack struct {
 	Name, Import, Path string
 
-	Files   []File
-	Content []string
-	Defs    []Def
+	Files      []File
+	Content    []string
+	Defs       []Def
+	GenImports Imp
 }
 
 // NPack ...

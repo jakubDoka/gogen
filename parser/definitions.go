@@ -59,15 +59,16 @@ func NDef(name string, content, raw []string, imports Imp) (def *Def, err error)
 // ParseLine turns line of code to line that is usable for external generation and one for internal
 func (d *Def) ParseLine(line, name string, content []string, imports Imp) (code, exCode string) {
 	var ln int
+	var lnl = len(line)
 	var i int
 o:
-	for ; i < len(line); i += ln {
+	for ; i < lnl; i += ln {
 		code += line[i-ln : i]
 		exCode += line[i-ln : i]
 		ln = 0
 
 		var none bool
-		for i+ln < len(line) && !str.IsIdent(line[i+ln]) {
+		for i+ln < lnl && !str.IsIdent(line[i+ln]) {
 			ln++
 			none = true
 		}
@@ -78,7 +79,7 @@ o:
 		for _, c := range content {
 			ln = len(c)
 
-			if str.IsTheIdent(line, c, i) {
+			if !str.IsTheIdent(line, c, i) {
 				continue
 			}
 			d.ImportSelf = true
@@ -89,7 +90,7 @@ o:
 		for k, v := range imports {
 			ln = len(k)
 
-			if str.IsTheIdent(line, k, i) {
+			if !str.IsTheIdent(line, k, i) {
 				continue
 			}
 
@@ -100,7 +101,7 @@ o:
 		for _, t := range d.Args {
 			ln = len(t)
 
-			if str.IsTheIdent(line, t, i) {
+			if !str.IsTheIdent(line, t, i) {
 				continue
 			}
 
@@ -110,7 +111,7 @@ o:
 		}
 
 		ln = 1
-		for i+ln < len(line)-1 && str.IsIdent(line[i+ln]) {
+		for i+ln < lnl && str.IsIdent(line[i+ln]) {
 			ln++
 		}
 	}
