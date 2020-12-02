@@ -4,7 +4,7 @@
 
 # annotations
 
-Nothing can be done without annotations as parsing all your code as possible template would be inefficient. Gogen uses annotation blocks witch restrict what gogen should care about or what to ignore. Blocks then can have further annotations. Always close your blocks or they will get ignored.Lets start with a core piece, def-block.
+Nothing can be done without annotations as parsing all your code, as possible template would be inefficient. Gogen uses annotation blocks witch restrict what gogen should care about or what to ignore. Blocks then can have further annotations. Always close your blocks or they will get ignored. Lets start with a core piece, def-block.
 
 ```go
 //def(
@@ -27,7 +27,7 @@ Def block has a rules annotation, rules define how your template work. In this c
 	Max<byte, MaxB>
 )*/
 ```
-gogen creates new file named gogen-output.go with following content
+after running `gogen <package import>` (gogen project/main) gogen creates new file named gogen-output.go with following content
 
 ```go
 package main
@@ -54,7 +54,7 @@ return b
 }
 ```
 
-This is how you can generate your templates, you have to tell what you need, but its already better then defining them all by hand, now you cna make a change to original and just rerun generation. Cross package generation is also supported. We have imp-block for this reason:
+This is how you can generate your templates, you have to tell what you need, but its already better then defining them all by hand, now you can make a change to original and just rerun generation. Cross package generation is also supported. We have imp-block for this reason:
 
 ```go
 /*imp(
@@ -62,7 +62,7 @@ This is how you can generate your templates, you have to tell what you need, but
 )*/
 ```
 
-You can then refer to the templates from package as `(package name).(template name)<...template arguments>`. in case you want to use external types in your templates you have to inform gogen about it:
+You can then refer to the templates from package as `(package name).(template name)<...template arguments>` (max.Max<float64, MaxF64>). in case you want to use external types in your templates you have to inform gogen about it:
 
 ```go
 /*gen(
@@ -72,17 +72,14 @@ You can then refer to the templates from package as `(package name).(template na
 )*/
 ```
 
-Last type of block is ign-block and its for ignoring pieces of code. As gogen takes notes about all items in your package, so it can annotate all items with `(package name).` in case of external generation. You may be shadowing something and so if you are not willing to rename shadows you can wrap shadowed code in ign-block. In case you have some huge file in your package and you do not want gogen to bother with that you can put opened ign-block on a beginning of a file.
+Last type of block is ign-block that its for ignoring pieces of code. Gogen takes notes about all items in your package, so it can annotate all items with `(package name).` in case of external generation. You may be shadowing something and so if you are not willing to rename shadows you can wrap shadowed code in ign-block. In case you have some huge file in your package and you do not want gogen to bother with that you can put opened ign-block on a beginning of a file.
 
 # todo
 
 This is a section with listed features that should be implemented, contributors are welcomed
-
-support nested definitions
-
-make block syntax configurable
-
-make output file name configurable
+	-support nested definitions
+	-make block syntax configurable
+	-make output file name configurable
 
 
 
