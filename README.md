@@ -77,9 +77,9 @@ Last type of block is ign-block that its for ignoring pieces of code. Gogen take
 # todo
 
 This is a section with listed features that should be implemented, contributors are welcomed
-	* support nested definitions
-	* make block syntax configurable
-	* make output file name configurable
+> support nested definitions
+> make block syntax configurable
+> make output file name configurable
 
 
 
