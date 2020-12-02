@@ -3,21 +3,22 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"gogen/dirs"
 	"testing"
 )
 
 func TestExtractImps(t *testing.T) {
 	tests := []struct {
 		name    string
-		content []string
+		content dirs.Paragraph
 		last    int
 		result  map[string]string
 	}{
 		{
 			"one-line",
-			[]string{
+			dirs.NParagraph(
 				`import "hello/there"`,
-			},
+			),
 			0,
 			map[string]string{
 				"there": "hello/there",
@@ -25,14 +26,14 @@ func TestExtractImps(t *testing.T) {
 		},
 		{
 			"multiple-line",
-			[]string{
+			dirs.NParagraph(
 				`import (`,
 				`"hello/there"`,
 				`"mmm/ccc"`,
 				``,
 				`"sss/kkk"`,
 				`)`,
-			},
+			),
 			5,
 			map[string]string{
 				"there": "hello/there",
@@ -42,14 +43,14 @@ func TestExtractImps(t *testing.T) {
 		},
 		{
 			"combo",
-			[]string{
+			dirs.NParagraph(
 				`import (`,
 				`"hello/there"`,
 				`)`,
 				`//hello`,
 				`import "memory/doubt"`,
 				``,
-			},
+			),
 			4,
 			map[string]string{
 				"there": "hello/there",
@@ -76,15 +77,16 @@ func TestExtractImps(t *testing.T) {
 func TestBuildImps(t *testing.T) {
 	test := Imp{"bb": "mm/bb", "ff": "ff/cc", "fff": "fff"}
 	result := "import (\n\t\"mm/bb\"\n\t\"ff/cc\"\n)\n"
+	res := test.Build("fff")
 
-	if BuildImps(test, "fff") != result {
-		t.Errorf("%q != %q", BuildImps(test, "fff"), result)
+	if res != result {
+		t.Errorf("%q != %q", res, result)
 	}
 
 }
 
 func TestCollectContent(t *testing.T) {
-	test := []string{
+	test := dirs.NParagraph(
 		"type Hello struct {}",
 		"func Mom() {}",
 		"//def(",
@@ -93,16 +95,18 @@ func TestCollectContent(t *testing.T) {
 		"//)",
 		"var Hell = 0",
 		"const Fri = 10",
-	}
+		"var (",
+		"All = 0",
+		"Fll = 0",
+		")",
+	)
 
-	result := []string{"Hello", "Mom", "Hell", "Fri"}
+	result := []string{"Hello", "Mom", "Hell", "Fri", "All", "Fll"}
 	resultBlock := BlockSlice{
 		Definition,
-		3,
-		5,
-		[]string{
-			"type SneakySneak struct {}",
-			"type OtherSneakySneak struct {}",
+		dirs.Paragraph{
+			{Path: nil, Idx: 3, Content: "type SneakySneak struct {}"},
+			{Path: nil, Idx: 4, Content: "type OtherSneakySneak struct {}"},
 		},
 	}
 
@@ -115,13 +119,13 @@ func TestCollectContent(t *testing.T) {
 	}
 
 	if !CompareBlocks(block[0], resultBlock) {
-		t.Errorf("%q != %q", resultBlock, block[0])
+		t.Errorf("%v != %v", resultBlock, block[0])
 	}
 
 }
 
 func CompareBlocks(a, b BlockSlice) (bl bool) {
-	if len(a.Raw) != len(b.Raw) || a.Start != b.Start || a.End != b.End || a.Type != b.Type {
+	if len(a.Raw) != len(b.Raw) || a.Type != b.Type {
 		return
 	}
 
@@ -135,12 +139,11 @@ func CompareBlocks(a, b BlockSlice) (bl bool) {
 }
 
 func TestNPack(t *testing.T) {
-	pck, err := NPack("gogen/test")
+	pck, err := NPack("segmentation/src/core/tp", nil)
 	if err != nil {
-		panic(err)
+		//panic(err)
 	}
+	fmt.Println(AllPacks["storage"].Defs)
 	bts, _ := json.MarshalIndent(pck, "", "  ")
-	fmt.Println(pck.Defs[0].Produce(true, "int"))
-	fmt.Println(pck.Defs[0].Produce(true, "float64"))
 	t.Error(string(bts))
 }

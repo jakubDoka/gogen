@@ -26,7 +26,7 @@ func GoDefNms(lines []string) (results []string) {
 					break
 				}
 			}
-			if i != 0 {
+			if i != 0 && IsUpper(line[0]) {
 				results = append(results, line[:i])
 			}
 		}

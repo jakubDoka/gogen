@@ -1,23 +1,54 @@
 package parser
 
-import "gogen/str"
+import (
+	"gogen/dirs"
+	"gogen/str"
+)
 
 // Imp symbolizes imports object
-type Imp = map[string]string
+type Imp map[string]string
+
+// Append appens argument to caller
+func (i Imp) Append(imp Imp) {
+	for k, v := range imp {
+		i[k] = v
+	}
+}
+
+// Add adds import to Imp
+func (i Imp) Add(imp string) {
+	i[str.ImpNm(imp)] = imp
+}
+
+// Build turns Imp to valid go import syntax
+func (i Imp) Build(ignore string) string {
+	result := "import (\n"
+	for _, v := range i {
+		if v == ignore {
+			continue
+		}
+		result += "\t\"" + v + "\"\n"
+	}
+
+	if result == "import (\n" {
+		return ""
+	}
+
+	return result + ")\n"
+}
 
 // ExtractImps collects all imports in a file and saves to a map
-func ExtractImps(raw []string) (Imp, int) {
+func ExtractImps(raw dirs.Paragraph) (Imp, int) {
 	imports := Imp{}
 	var inside bool
 	var last int
-	for i, l := range raw {
-		l = str.RemInv(l)
+	for i, line := range raw {
+		l := str.RemInv(line.Content)
 		ln := str.LastByte(l, '"')
 
 		if inside {
 			if ln != -1 {
-				st := l[1:ln]
-				imports[str.ImpNm(st)] = st
+				imports.Add(l[1:ln])
 			}
 
 			if str.EndsWith(l, ")") {
@@ -33,8 +64,7 @@ func ExtractImps(raw []string) (Imp, int) {
 			case '(':
 				inside = true
 			case '"':
-				st := l[len("import")+1 : ln]
-				imports[str.ImpNm(st)] = st
+				imports.Add(l[len("import")+1 : ln])
 				last = i
 			}
 		} else if ok, _ := str.IsGoDef(l); ok {
@@ -45,27 +75,14 @@ func ExtractImps(raw []string) (Imp, int) {
 	return imports, last
 }
 
-// BuildImps turns Imp to valid go import syntax
-func BuildImps(imports Imp, ignore string) string {
-	result := "import (\n"
-	for _, v := range imports {
-		if v == ignore {
-			continue
-		}
-		result += "\t\"" + v + "\"\n"
-	}
-	return result + ")\n"
-}
-
 // CollectContent collects all package content that can be imported
-func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
+func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) {
 	var inBlock bool
 	var current BlockSlice
 	for i, line := range raw {
-		l := str.RemInvStart(line)
+		l := str.RemInvStart(line.Content)
 		if inBlock {
 			if ok, _ := IsBlockEnd(l); ok {
-				current.End = i
 				blocks = append(blocks, current)
 				current = BlockSlice{}
 
@@ -77,7 +94,6 @@ func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
 		} else {
 			if ok, tp := IsBlockStart(l); ok {
 				current.Type = tp
-				current.Start = i + 1
 
 				inBlock = true
 				continue
@@ -87,21 +103,14 @@ func CollectContent(raw []string) (content []string, blocks []BlockSlice) {
 		if ok, _ := str.IsGoDef(l); ok {
 			name := str.RemInv(str.GoDefNm(l))
 			if name == "" {
-				if str.EndsWith(str.RemInv(line), "(") { // multiline def
-					content = append(content, str.GoDefNms(raw[i+1:])...)
+				if str.EndsWith(str.RemInv(line.Content), "(") { // multiline def
+					content = append(content, str.GoDefNms(raw.GetContent()[i+1:])...)
 				}
-			} else {
+			} else if str.IsUpper(name[0]) {
 				content = append(content, name)
 			}
 		}
 	}
 
 	return
-}
-
-// BlockSlice stores info about a block time and interval containing its content
-type BlockSlice struct {
-	Type       Block
-	Start, End int
-	Raw        []string
 }

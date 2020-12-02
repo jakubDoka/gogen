@@ -2,7 +2,6 @@ package dirs
 
 import (
 	"bufio"
-	"errors"
 	"gogen/str"
 	"io/ioutil"
 	"os"
@@ -21,13 +20,19 @@ func init() {
 }
 
 // PackPath returns go package path or error if it does not exist
-func PackPath(imp string) (res string, err error) {
-	res = path.Join(Gopath, "src", imp)
+func PackPath(imp string) (string, bool) {
+	res := path.Join(Gopath, "src", imp)
 	if Exists(res) {
-		return
+		return res, true
 	}
 
-	return "", errors.New("package does not exist")
+	return "", false
+}
+
+// PackImport return package import from path
+func PackImport(p string) string {
+	ln := len(path.Join(Gopath, "src")) + 1
+	return p[ln:]
 }
 
 // ListFilePaths returns all paths to files in one directory.
@@ -66,7 +71,7 @@ func ListPaths(p string, filter func(os.FileInfo) bool) (ps []string, err error)
 
 // FileAsLines returns file as lines and excludes line s above and
 // line with package and also returns name of package
-func FileAsLines(p string) (lines []string, name string, err error) {
+func FileAsLines(p string) (lines Paragraph, name string, err error) {
 	file, err := os.Open(p)
 	if err != nil {
 		return
@@ -74,22 +79,82 @@ func FileAsLines(p string) (lines []string, name string, err error) {
 	defer file.Close()
 
 	var afterPackage bool
+	var i int
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		i++
+
 		txt := scanner.Text()
 		if afterPackage {
-			lines = append(lines, txt)
+			lines = append(lines, Line{&p, i, txt})
 		} else if str.StartsWith(txt, "package") {
 			txt = str.RemInv(txt)
 			name = txt[len("package"):]
 			afterPackage = true
 		}
-
 	}
 
 	err = scanner.Err()
 	return
+}
+
+// Paragraph is group of lines
+type Paragraph []Line
+
+// NParagraph is only for debuging purposes
+// it creates dummy paragraph from strings
+func NParagraph(lines ...string) Paragraph {
+	p := make(Paragraph, len(lines))
+	for i := range lines {
+		p[i] = Line{nil, i, lines[i]}
+	}
+	return p
+}
+
+// GetContent extracts all text to slice of strings
+func (p Paragraph) GetContent() []string {
+	res := make([]string, len(p))
+	for i := range p {
+		res[i] = p[i].Content
+	}
+	return res
+}
+
+// Line is file line, it stores its index and path for easy logging
+type Line struct {
+	Path    *string
+	Idx     int
+	Content string
+}
+
+func (l *Line) String() string {
+	return l.Content
+}
+
+// CreateFile with initial content
+func CreateFile(p, content string) error {
+	f, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteIfPresent deletes file or directory if it is present
+func DeleteIfPresent(p string) error {
+	if Exists(p) {
+		return os.Remove(p)
+	}
+	return nil
 }
 
 // Exists returns whether file exist

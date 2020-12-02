@@ -18,7 +18,7 @@ func ContainsIdent(str, ident string) bool {
 // IsTheIdent whether there is ident on given index
 func IsTheIdent(str, ident string, idx int) bool {
 	l := len(ident)
-	return len(str) > idx+l && str[idx:idx+l] == ident && IsSliceIdent(str, idx, l)
+	return len(str) >= idx+l && str[idx:idx+l] == ident && IsSliceIdent(str, idx, l)
 }
 
 // IsSliceIdent returns whether slice of string is identifier

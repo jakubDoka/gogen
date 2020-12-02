@@ -1,5 +1,10 @@
 package str
 
+// IsUpper returns whether byte is upper case
+func IsUpper(b byte) bool {
+	return b >= 'A' && b <= 'Z'
+}
+
 // ImpNm returns name of import
 func ImpNm(imp string) string {
 	idx := LastByte(imp, '/')

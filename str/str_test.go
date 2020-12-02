@@ -47,3 +47,7 @@ func TestGoDefNms(t *testing.T) {
 	}
 
 }
+
+func TestIsIdent(t *testing.T) {
+	t.Error(IsTheIdent("[]tp", "tp", 2))
+}

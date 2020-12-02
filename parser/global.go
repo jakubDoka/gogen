@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+	"gogen/dirs"
 	"gogen/str"
 )
 
@@ -28,6 +30,9 @@ var (
 	Rules      = "//rules"
 	Dependency = "//dependency"
 	Gibrich    = "____"
+	OutputFile = "gogen-output.go"
+
+	AllPacks = map[string]*Pack{}
 )
 
 // IsBlockStart returns whether string is any block start
@@ -52,4 +57,14 @@ func IsBlockEnd(st string) (bool, Block) {
 	}
 
 	return false, Block{}
+}
+
+// NError formats an error
+func NError(line dirs.Line, message string) error {
+	return fmt.Errorf("error: file: %s line: %d content: %s\nreason: %s",
+		*line.Path,
+		line.Idx,
+		line.Content,
+		message,
+	)
 }
