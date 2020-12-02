@@ -28,20 +28,3 @@ func main() {
 		fmt.Println("Done")
 	}
 }
-
-//def(
-//rules Max<int, Ident>
-func Ident(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-//)
-
-/*gen(
-	Max<float64, MaxF64>
-	Max<float32, MaxF32>
-	Max<byte, MaxB>
-)*/

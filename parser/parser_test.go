@@ -2,7 +2,6 @@ package parser
 
 import (
 	"encoding/json"
-	"fmt"
 	"gogen/dirs"
 	"testing"
 )
@@ -139,11 +138,10 @@ func CompareBlocks(a, b BlockSlice) (bl bool) {
 }
 
 func TestNPack(t *testing.T) {
-	pck, err := NPack("segmentation/src/core/tp", nil)
+	pck, err := NPack("gogen/test", nil)
 	if err != nil {
-		//panic(err)
+		panic(err)
 	}
-	fmt.Println(AllPacks["storage"].Defs)
 	bts, _ := json.MarshalIndent(pck, "", "  ")
 	t.Error(string(bts))
 }
