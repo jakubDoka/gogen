@@ -37,9 +37,9 @@ func PackImport(p string) string {
 
 // ListFilePaths returns all paths to files in one directory.
 // There is no recursion.
-func ListFilePaths(p string) (ps []string, err error) {
+func ListFilePaths(p, ext string) (ps []string, err error) {
 	return ListPaths(p, func(i os.FileInfo) bool {
-		return !i.IsDir() && str.EndsWith(i.Name(), ".go")
+		return !i.IsDir() && str.EndsWith(i.Name(), ext)
 	})
 }
 

@@ -1,11 +1,22 @@
 package parser
 
 import (
+	"fmt"
 	"gogen/dirs"
+	"gogen/gogentemps"
 	"gogen/str"
 	"path"
 	"strings"
 )
+
+/*imp(
+	gogen/gogentemps
+)*/
+
+/*gen(
+	gogentemps.Set<string, SS>
+	gogentemps.DoubleSet<int, string, DS>
+)*/
 
 // Pack is a go Package, it stores all information needed for code generation
 type Pack struct {
@@ -14,11 +25,13 @@ type Pack struct {
 	Files   []File
 	Content []string
 	Defs    map[string]*Def
+
+	Generated gogentemps.Set
 }
 
 // NPack ...
 func NPack(imp string, line *dirs.Line) (pack *Pack, err error) {
-	p := &Pack{Defs: map[string]*Def{}}
+	p := &Pack{Defs: map[string]*Def{}, Generated: gogentemps.Set{}}
 
 	p.Import = imp
 	var ok bool
@@ -62,16 +75,28 @@ func (p *Pack) Generate() (err error) {
 	var (
 		content string
 		ignore  string
+		result  string
+
+		def *Def
+		ok  bool
 
 		nonexistant = "template does not exist"
 	)
 
 	requests, imports := p.CollectGenRequests()
 
-	for _, line := range requests {
-		args, name, err := ParseRules(line)
+	for i := 0; i < len(requests); i++ {
+		line := requests[i]
+
+		args, name, raw, err := ParseRules(line)
 		if err != nil {
 			return err
+		}
+
+		if p.Generated[raw] {
+			continue
+		} else {
+			p.Generated.Add(raw)
 		}
 
 		if strings.Contains(name, ".") {
@@ -82,40 +107,37 @@ func (p *Pack) Generate() (err error) {
 				return NError(line, "nonexistant package")
 			}
 
-			def, ok := pack.Defs[name]
+			def, ok = pack.Defs[name]
 			if !ok {
 				return NError(line, nonexistant)
 			}
 
 			imports.Append(def.Imports)
 
-			result, err := def.Produce(true, args...)
-			if err != nil {
-				return err
-			}
-
-			content += result
+			result, err = def.Produce(line, true, args...)
 
 			if !def.ImportSelf {
 				ignore = pack.Import
 			}
 		} else {
-			def, ok := p.Defs[name]
+			def, ok = p.Defs[name]
 			if !ok {
+				fmt.Println(p.Defs)
 				return NError(line, nonexistant)
 			}
 
 			imports.Append(def.Imports)
 
-			result, err := def.Produce(false, args...)
-			if err != nil {
-				return err
-			}
-
-			content += result
+			result, err = def.Produce(line, false, args...)
 
 			ignore = p.Import
+
 		}
+		requests = append(requests, def.Deps...)
+		if err != nil {
+			return err
+		}
+		content += result
 	}
 
 	path := path.Join(p.Path, OutputFile)
@@ -208,7 +230,7 @@ func (p *Pack) CollectContent() {
 
 // CollectFiles stores all files as lines
 func (p *Pack) CollectFiles() (err error) {
-	fl, err := dirs.ListFilePaths(p.Path)
+	fl, err := dirs.ListFilePaths(p.Path, ".go")
 	if err != nil {
 		return
 	}

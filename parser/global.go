@@ -28,7 +28,8 @@ var (
 	}
 
 	Rules      = "//rules"
-	Dependency = "//dependency"
+	Dependency = "//dep"
+
 	Gibrich    = "____"
 	OutputFile = "gogen-output.go"
 
@@ -60,11 +61,11 @@ func IsBlockEnd(st string) (bool, Block) {
 }
 
 // NError formats an error
-func NError(line dirs.Line, message string) error {
+func NError(line dirs.Line, message string, args ...interface{}) error {
 	return fmt.Errorf("error: file: %s line: %d content: %s\nreason: %s",
 		*line.Path,
 		line.Idx,
 		line.Content,
-		message,
+		fmt.Sprintf(message, args...),
 	)
 }

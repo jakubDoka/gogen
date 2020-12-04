@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"gogen/dirs"
 	"gogen/str"
 	"strings"
@@ -11,6 +10,7 @@ import (
 // template results and also stores needed imports
 type Def struct {
 	Args    []string
+	Deps    dirs.Paragraph
 	Imports Imp
 
 	ImportSelf bool
@@ -19,8 +19,8 @@ type Def struct {
 }
 
 // NDef ...
-func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (def *Def, err error) {
-	def = &Def{Imports: Imp{}}
+func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (d *Def, err error) {
+	def := &Def{Imports: Imp{}}
 
 	var ln dirs.Line
 	j := 0
@@ -34,9 +34,9 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (def *
 			}
 
 			ln = line
-			def.Args, def.Name, err = ParseRules(line)
+			def.Args, def.Name, _, err = ParseRules(line)
 			if err != nil {
-				return nil, err
+				return
 			}
 		} else {
 			raw[j] = line
@@ -52,24 +52,42 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (def *
 	}
 
 	for _, line := range raw {
-		internal, external := def.ParseLine(line, name, content, imports)
-		def.Code += internal + "\n"
-		def.ExtCode += external + "\n"
+		internal, external, dep := def.ParseLine(line, name, content, imports)
+		if dep {
+			line.Content = name + "." + internal
+			def.Deps = append(def.Deps, line)
+		} else {
+			def.Code += internal + "\n"
+			def.ExtCode += external + "\n"
+		}
+
 	}
 
 	if def.ImportSelf {
 		def.Imports[name] = imports[name]
 	}
 
+	d = def
 	return
 }
 
 // ParseLine turns line of code to line that is usable for external generation and one for internal
-func (d *Def) ParseLine(line dirs.Line, name string, content []string, imports Imp) (code, exCode string) {
+func (d *Def) ParseLine(line dirs.Line, name string, content []string, imports Imp) (code, exCode string, dep bool) {
 	var ln int
 	var lnl = len(line.Content)
 	var cont = line.Content
 	var i int
+
+	dep = str.StartsWith(cont, Dependency)
+
+	if dep {
+		_, cont = str.SplitToTwo(cont, ' ')
+		lnl = len(cont)
+		if lnl == 0 {
+			dep = false
+			return
+		}
+	}
 o:
 	for ; i < lnl; i += ln {
 		code += cont[i-ln : i]
@@ -83,6 +101,18 @@ o:
 		}
 		if none {
 			continue
+		}
+
+		for _, t := range d.Args {
+			ln = len(t)
+
+			if !str.IsTheIdent(cont, t, i) {
+				continue
+			}
+
+			code += Gibrich
+			exCode += Gibrich
+			continue o
 		}
 
 		for _, c := range content {
@@ -107,18 +137,6 @@ o:
 			continue o
 		}
 
-		for _, t := range d.Args {
-			ln = len(t)
-
-			if !str.IsTheIdent(cont, t, i) {
-				continue
-			}
-
-			code += Gibrich
-			exCode += Gibrich
-			continue o
-		}
-
 		ln = 1
 		for i+ln < lnl && str.IsIdent(cont[i+ln]) {
 			ln++
@@ -130,9 +148,9 @@ o:
 }
 
 // Produce forms a template
-func (d *Def) Produce(external bool, args ...string) (result string, err error) {
+func (d *Def) Produce(line dirs.Line, external bool, args ...string) (result string, err error) {
 	if len(args) != len(d.Args) {
-		err = fmt.Errorf("incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(args))
+		err = NError(line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(args))
 		return
 	}
 
@@ -144,14 +162,17 @@ func (d *Def) Produce(external bool, args ...string) (result string, err error) 
 
 	for i, a := range args {
 		result = strings.ReplaceAll(result, Gibrich+d.Args[i], a)
+		for j := range d.Deps {
+			d.Deps[j].Content = strings.ReplaceAll(d.Deps[j].Content, Gibrich+d.Args[i], a)
+		}
 	}
 
 	return
 }
 
 // ParseRules take line witch should contain template definition and parses it
-func ParseRules(line dirs.Line) (def []string, name string, err error) {
-	raw := str.RemInv(line.Content) // we don't need them anymore
+func ParseRules(line dirs.Line) (def []string, name, raw string, err error) {
+	raw = str.RemInv(line.Content) // we don't want them
 
 	name, raw = str.SplitToTwo(raw, '<')
 	if raw == "" {
