@@ -102,14 +102,19 @@ func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) 
 		}
 
 		if ok, _ := str.IsGoDef(l); ok {
-			name := str.ParseSimpleGoDef(l)
-			if name == "" {
+			defs := str.ParseSimpleGoDef(l)
+			if len(defs) == 0 {
 				if str.EndsWith(str.RemInv(line.Content), "(") { // multiline def
 					content = append(content, str.ParseMultilineGoDef(raw.GetContent()[i+1:])...)
 				}
-			} else if str.IsUpper(name[0]) {
-				content = append(content, name)
+			} else {
+				for _, def := range defs {
+					if str.IsUpper(def[0]) {
+						content = append(content, def)
+					}
+				}
 			}
+
 		}
 	}
 

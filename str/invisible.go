@@ -10,6 +10,16 @@ func RemInvStart(str string) string {
 	return ""
 }
 
+// RemInvStart removes all invisible character at the end of a string
+func RemInvEnd(str string) string {
+	for i := len(str) - 1; i >= 0; i-- {
+		if IsVisible(str[i]) {
+			return str[:i+1]
+		}
+	}
+	return ""
+}
+
 // RemInv removes invisible parts of a string
 func RemInv(str string) (res string) {
 	var j int

@@ -26,17 +26,18 @@ func TestRemInv(t *testing.T) {
 
 func TestGoDefNms(t *testing.T) {
 	test := []string{
-		"a = 0",
-		"b = f{",
-		"r: 0",
+		"A = 0",
+		"B = f{",
+		"r: 0,",
 		"}",
-		"c = fu(",
+		"C = fu(",
 		"a",
 		")",
+		"D, E int",
 		")",
 	}
 
-	result := []string{"a", "b", "c"}
+	result := []string{"A", "B", "C", "E", "D"}
 
 	res := ParseMultilineGoDef(test)
 
