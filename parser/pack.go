@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"gogen/dirs"
 	"gogen/str"
 	"path"
@@ -24,7 +25,7 @@ type Pack struct {
 
 	Defs      map[string]*Def
 	Cont      Counter
-	Generated map[string]*Rls
+	Generated map[string]*Rules
 }
 
 // NPack ...
@@ -32,7 +33,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p := &Pack{
 		Defs:      map[string]*Def{},
 		Cont:      Counter{},
-		Generated: map[string]*Rls{},
+		Generated: map[string]*Rules{},
 		Import:    imp,
 	}
 
@@ -75,8 +76,8 @@ func (p *Pack) Generate() (err error) {
 	requests, imports := p.CollectGenRequests()
 	for len(requests) != 0 {
 		rls := requests[0]
-		//fmt.Println(rls)
-		u := rls.GetUniqueness()
+
+		u := rls.Summarize()
 		if _, ok := p.Generated[u]; ok {
 			requests = requests[1:]
 			continue
@@ -92,6 +93,7 @@ func (p *Pack) Generate() (err error) {
 
 			def, ok = pack.Defs[rls.Name]
 			if !ok {
+				fmt.Println(rls)
 				NError(rls.Line, nonexistant)
 			}
 
@@ -132,7 +134,7 @@ func (p *Pack) Generate() (err error) {
 }
 
 // CollectGenRequests ...
-func (p *Pack) CollectGenRequests() (req []*Rls, imports Imp) {
+func (p *Pack) CollectGenRequests() (req []*Rules, imports Imp) {
 	imports = Imp{}
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Generators) {

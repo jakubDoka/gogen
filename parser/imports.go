@@ -115,11 +115,12 @@ func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) 
 	return
 }
 
+// Counter is used for counting definitions so they can get unique name
 type Counter map[string]int
 
-func (c Counter) Process(name string) int {
+// Increment increments a counter and returns previous value
+func (c Counter) Increment(name string) int {
+	defer func() { c[name]++ }()
 
-	c[name]++
-
-	return c[name] - 1
+	return c[name]
 }

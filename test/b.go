@@ -31,15 +31,16 @@ type a = interface{}
 	Hello<float64, r>
 	Hello<Bar, h>
 	test2.Clamp<float64, Clamp64>
-	gogentemps.Doubleset<int, float64, BB>
-	gogentemps.Doubleset<int, string, HH>
-	gogentemps.Quadrupleset<int, float64, bool, int, KK>
-	gogentemps.Quadrupleset<int, string, int8, float32, NN>
+	test2.Doubleset<int, float64, BB>
+	test2.Doubleset<int, string, HH>
+	test2.Quadrupleset<int, float64, bool, int, KK>
+	test2.Quadrupleset<int, string, int8, float32, NN>
 )*/
 
 //def(
 //rules Hello<a>
 
+// Hello ...
 func Hello(b Bar, value a) a {
 	fmt.Print(b)
 	reflect.TypeOf("brb")

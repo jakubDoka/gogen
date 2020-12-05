@@ -3,16 +3,15 @@ package parser
 import (
 	"gogen/dirs"
 	"gogen/str"
-	"strconv"
 	"strings"
 )
 
 // Def is a template definition, it has methods to return
 // template results and also stores needed imports
 type Def struct {
-	*Rls
+	*Rules
 
-	Deps    []*Rls
+	Deps    []*Rules
 	Imports Imp
 
 	ImportSelf bool
@@ -28,7 +27,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 	j := 0
 	for _, line := range raw {
 		line.Content = str.RemInvStart(line.Content)
-		if str.StartsWith(line.Content, Rules) {
+		if str.StartsWith(line.Content, RulesIdent) {
 			_, line.Content = str.SplitToTwo(line.Content, ' ')
 			if line.Content == "" {
 				NError(line, "missing definition")
@@ -36,7 +35,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 			}
 
 			ln = line
-			def.Rls = NRules(line, true)
+			def.Rules = NRules(line, true)
 		} else {
 			raw[j] = line
 			j++
@@ -55,8 +54,11 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 	for _, line := range raw {
 		internal, external, dep := def.ParseLine(line, name, content, args, imports)
 		if dep {
-			line.Content = name + "." + internal
+			line.Content = internal
 			rules := NRules(line, false)
+			if !rules.IsExternal() {
+				rules.Pack = name
+			}
 			args = append(args, rules.GetNameSub())
 			def.Deps = append(def.Deps, rules)
 		} else {
@@ -82,7 +84,7 @@ func (d *Def) ParseLine(line dirs.Line, name string, content, args []string, imp
 		cont  = line.Content
 	)
 
-	dep = str.StartsWith(cont, Dependency)
+	dep = str.StartsWith(cont, DependencyIdent)
 
 	if dep {
 		_, cont = str.SplitToTwo(cont, ' ')
@@ -151,7 +153,7 @@ o:
 }
 
 // Produce forms a template
-func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result string, deps []*Rls) {
+func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (result string, deps []*Rules) {
 
 	if len(rules.Args) != len(d.Args) {
 		NError(rules.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(rules.Args))
@@ -163,7 +165,7 @@ func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result st
 		result = d.Code
 	}
 
-	deps = make([]*Rls, len(d.Deps))
+	deps = make([]*Rules, len(d.Deps))
 	for i, d := range d.Deps {
 		deps[i] = d.Copy()
 	}
@@ -181,9 +183,9 @@ func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result st
 	}
 
 	for _, dp := range deps {
-		val, ok := done[dp.GetUniqueness()]
+		val, ok := done[dp.Summarize()]
 		if !ok {
-			dp.Idx = cont.Process(dp.OldName)
+			dp.Idx = cont.Increment(dp.OldName)
 			dp.UpdateNameSub()
 		} else {
 			val.OldName = dp.OldName
@@ -193,80 +195,4 @@ func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result st
 	}
 
 	return
-}
-
-// Rls are template rules, they can be part of a template definition or template request
-type Rls struct {
-	Args []string
-
-	Idx                 int
-	Name, Pack, OldName string
-
-	Line dirs.Line
-}
-
-// NRules take line witch should contain template definition and parses it
-func NRules(line dirs.Line, isDef bool) (rules *Rls) {
-	rules = &Rls{Line: line}
-
-	rw := str.RemInv(line.Content) // we don't want them
-
-	rules.Name, rw = str.SplitToTwo(rw, '<')
-	if rw == "" {
-		NError(line, "missing parameters")
-	}
-
-	pck, name := str.SplitToTwo(rules.Name, '.')
-	if name != "" {
-		rules.Name, rules.Pack = name, pck
-	}
-
-	rw = rw[:len(rw)-1] // excluding ">"
-
-	rules.Args = strings.Split(rw, ",")
-
-	if isDef {
-		if len(rules.Args) == 0 {
-			NError(line, "template rules has less then 1 argument, that is considered redundant")
-		}
-		rules.Args = append(rules.Args, rules.Name)
-	}
-
-	rules.OldName = rules.GetNameSub()
-
-	return
-}
-
-// GetNameSub return template name substitute
-func (r *Rls) GetNameSub() string {
-	return r.Args[len(r.Args)-1]
-}
-
-// UpdateNameSub updates name substitute so there is no name collizion
-func (r *Rls) UpdateNameSub() {
-	if r.Idx == 0 {
-		return
-	}
-	r.Args[len(r.Args)-1] = r.GetNameSub() + strconv.Itoa(r.Idx)
-}
-
-// IsExternal returns whether definition is external
-func (r *Rls) IsExternal() bool {
-	return r.Pack != ""
-}
-
-func (r *Rls) GetUniqueness() (res string) {
-	res = r.Name
-	for _, a := range r.Args[:len(r.Args)-1] {
-		res += a
-	}
-
-	return
-}
-
-func (r *Rls) Copy() *Rls {
-	nr := *r
-	nr.Args = make([]string, len(r.Args))
-	copy(nr.Args, r.Args)
-	return &nr
 }

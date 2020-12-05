@@ -28,8 +28,8 @@ var (
 		MultiComment,
 	}
 
-	Rules      = "//rules"
-	Dependency = "//dep"
+	RulesIdent      = "//rules"
+	DependencyIdent = "//dep"
 
 	Gibrich    = "____"
 	OutputFile = "gogen-output.go"
@@ -63,10 +63,9 @@ func IsBlockEnd(st string) (bool, Block) {
 
 // NError formats an error
 func NError(line dirs.Line, message string, args ...interface{}) {
-	fmt.Printf("file: %s\nline: %d\ncontent: %s\nerror: %s",
+	fmt.Printf("file: %s\nline: %d\nerror: %s\n",
 		*line.Path,
 		line.Idx,
-		line.Content,
 		fmt.Sprintf(message, args...),
 	)
 	os.Exit(2)

@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// e ...
 func e(b Bar, value int) int {
 fmt.Print(b)
 reflect.TypeOf("brb")
@@ -12,6 +13,7 @@ return value
 }
 
 
+// r ...
 func r(b Bar, value float64) float64 {
 fmt.Print(b)
 reflect.TypeOf("brb")
@@ -19,6 +21,7 @@ return value
 }
 
 
+// h ...
 func h(b Bar, value Bar) Bar {
 fmt.Print(b)
 reflect.TypeOf("brb")
@@ -26,11 +29,13 @@ return value
 }
 
 
+// Clamp64 for testing
 func Clamp64(val, min, max float64) float64 {
 return Max(min, Min(max, val))
 }
 
 
+// Max ...
 func Max(a, b float64) float64 {
 if a > b {
 return b
@@ -39,6 +44,7 @@ return a
 }
 
 
+// Min ...
 func Min(a, b float64) float64 {
 if a < b {
 return a
