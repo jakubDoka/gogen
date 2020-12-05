@@ -56,7 +56,6 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p.ResolveDefBlocks()
 
 	p.Generate()
-
 	pack = p
 	return
 }
@@ -142,7 +141,7 @@ func (p *Pack) CollectGenRequests() (req []*Rls, imports Imp) {
 				if str.StartsWith(line.Content, "!") {
 					imports.Add(line.Content[1:])
 				} else {
-					req = append(req, NRules(line))
+					req = append(req, NRules(line, false))
 				}
 			}
 		}

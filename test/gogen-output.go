@@ -1,8 +1,8 @@
 package test
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 )
 
 func e(b Bar, value int) int {
@@ -26,12 +26,24 @@ return value
 }
 
 
-// MinF64 ...
-func MinF64(a, b float64) float64 {
+func Clamp64(val, min, max float64) float64 {
+return Max(min, Min(max, val))
+}
+
+
+func Max(a, b float64) float64 {
 if a > b {
 return b
 }
 return a
+}
+
+
+func Min(a, b float64) float64 {
+if a < b {
+return a
+}
+return b
 }
 
 

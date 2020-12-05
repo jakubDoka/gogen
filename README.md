@@ -8,8 +8,8 @@ Nothing can be done without annotations as parsing all your code, as possible te
 
 ```go
 //def(
-//rules Max<int, Ident>
-func Ident(a, b int) int {
+//rules Max<int>
+func Max(a, b int) int {
 	if a > b {
 		return a
 	}
@@ -30,7 +30,7 @@ Def block has a rules annotation, rules define how your template work. In this c
 after running `gogen <package import>` (gogen project/main) gogen creates new file named gogen-output.go with following content
 
 ```go
-package main
+package max
 
 func MaxF64(a, b float64) float64 {
 if a > b {
@@ -67,13 +67,77 @@ You can then refer to the templates from package as `(package name).(template na
 ```go
 /*gen(
 	!libs/my_types
-	Max<my_types.Float64, MaxF64>
-	Max<my_types.Float32, MaxF32>
+	max.Max<my_types.Float64, MaxF64>
+	max.Max<my_types.Float32, MaxF32>
 )*/
 ```
 
 Last type of block is ign-block that its for ignoring pieces of code. Gogen takes notes about all items in your package, so it can annotate all items with `(package name).` in case of external generation. You may be shadowing something and so if you are not willing to rename shadows you can wrap shadowed code in ign-block. In case you have some huge file in your package and you do not want gogen to bother with that you can put opened ign-block on a beginning of a file.
 
+## advanced generation
+
+Its little bit tedious but yo can combine your templates together with `dep` annotation, but firs we will define one small template
+
+```go
+//def(
+//rules Min<int>
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+//)
+```
+
+Okay and now we will combine min and max and create clamp function
+
+```go
+//def(
+//rules Clamp<int>
+//dep Max<int, Max>
+//dep Min<int, Min>
+
+func Clamp(val, min, max int) int {
+	return Max(min, Min(max, val))
+}
+
+//)
+```
+
+Lets generate our function like usual
+
+```go
+/*gen(
+	Clamp<float64, ClampF64>
+)*/
+```
+
+gogen-output.go now looks like this
+
+```go
+package max
+
+func ClampF64(val, min, max float64) float64 {
+return Max(min, Min(max, val))
+}
+
+
+func Max(a, b float64) float64 {
+if a > b {
+return b
+}
+return a
+}
+
+
+func Min(a, b float64) float64 {
+if a < b {
+return a
+}
+return b
+}
+```
 # todo
 
 This is a section with listed features that should be implemented, contributors are welcomed

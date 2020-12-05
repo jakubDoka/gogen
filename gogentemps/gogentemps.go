@@ -1,7 +1,7 @@
 package gogentemps
 
 //def(
-//rules Set<string, Set>
+//rules Set<string>
 
 // Set is a string set
 type Set map[string]bool
@@ -26,7 +26,7 @@ type setA = Set
 type setB = Set
 
 //def(
-//rules Doubleset<a, b, Doubleset>
+//rules Doubleset<a, b>
 //dep Set<a, setA>
 //dep Set<b, setB>
 
@@ -50,7 +50,7 @@ type setC = Doubleset
 type setD = Doubleset
 
 //def(
-//rules Quadrupleset<a, b, c, d, Quadrupleset>
+//rules Quadrupleset<a, b, c, d>
 //dep Doubleset<a, b, setC>
 //dep Doubleset<c, d, setD>
 

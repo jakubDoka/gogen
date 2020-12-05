@@ -30,7 +30,7 @@ type a = interface{}
 	Hello<int, e>
 	Hello<float64, r>
 	Hello<Bar, h>
-	test2.min<float64, MinF64>
+	test2.Clamp<float64, Clamp64>
 	gogentemps.Doubleset<int, float64, BB>
 	gogentemps.Doubleset<int, string, HH>
 	gogentemps.Quadrupleset<int, float64, bool, int, KK>
@@ -38,9 +38,9 @@ type a = interface{}
 )*/
 
 //def(
-//rules Hello<a, f>
+//rules Hello<a>
 
-func f(b Bar, value a) a {
+func Hello(b Bar, value a) a {
 	fmt.Print(b)
 	reflect.TypeOf("brb")
 	return value

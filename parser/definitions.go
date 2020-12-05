@@ -36,7 +36,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 			}
 
 			ln = line
-			def.Rls = NRules(line)
+			def.Rls = NRules(line, true)
 		} else {
 			raw[j] = line
 			j++
@@ -56,7 +56,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 		internal, external, dep := def.ParseLine(line, name, content, args, imports)
 		if dep {
 			line.Content = name + "." + internal
-			rules := NRules(line)
+			rules := NRules(line, false)
 			args = append(args, rules.GetNameSub())
 			def.Deps = append(def.Deps, rules)
 		} else {
@@ -109,7 +109,6 @@ o:
 
 		for _, t := range args {
 			ln = len(t)
-
 			if !str.IsTheIdent(cont, t, i) {
 				continue
 			}
@@ -196,7 +195,7 @@ func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result st
 	return
 }
 
-// *Rls are template rules, they can be part of a template definition or template request
+// Rls are template rules, they can be part of a template definition or template request
 type Rls struct {
 	Args []string
 
@@ -207,7 +206,7 @@ type Rls struct {
 }
 
 // NRules take line witch should contain template definition and parses it
-func NRules(line dirs.Line) (rules *Rls) {
+func NRules(line dirs.Line, isDef bool) (rules *Rls) {
 	rules = &Rls{Line: line}
 
 	rw := str.RemInv(line.Content) // we don't want them
@@ -225,8 +224,12 @@ func NRules(line dirs.Line) (rules *Rls) {
 	rw = rw[:len(rw)-1] // excluding ">"
 
 	rules.Args = strings.Split(rw, ",")
-	if len(rules.Args) < 2 {
-		NError(line, "template rules has less then 2 arguments, that is considered redundant and incorrect as you have to have at least one argument as template parameter an one as name substitute")
+
+	if isDef {
+		if len(rules.Args) == 0 {
+			NError(line, "template rules has less then 1 argument, that is considered redundant")
+		}
+		rules.Args = append(rules.Args, rules.Name)
 	}
 
 	rules.OldName = rules.GetNameSub()
