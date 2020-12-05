@@ -1,4 +1,5 @@
-<img src="assets/logo.png" align="right" />
+<img src="assets/logo.png" align="right" width=200 height=150/>
+
 # gogen (golang code generator)
 
  Gogen is a very simple code generator. It does not force you to write code that would not be compilable, nor wrap your code in comments. You use comments just as orientation for gogen. All you need to do to install gogen is building this repository on your os and adding the root of the repo to your path environment variable.
