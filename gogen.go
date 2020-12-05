@@ -21,10 +21,7 @@ func main() {
 		dir = args[0]
 	}
 
-	_, err = parser.NPack(dir, nil)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("Done")
-	}
+	parser.NPack(dir, nil)
+
+	fmt.Println("Done")
 }

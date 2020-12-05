@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gogen/dirs"
 	"gogen/str"
+	"os"
 )
 
 // Block is pair of Start and end used whe parsing
@@ -61,11 +62,12 @@ func IsBlockEnd(st string) (bool, Block) {
 }
 
 // NError formats an error
-func NError(line dirs.Line, message string, args ...interface{}) error {
-	return fmt.Errorf("error: file: %s line: %d content: %s\nreason: %s",
+func NError(line dirs.Line, message string, args ...interface{}) {
+	fmt.Printf("file: %s\nline: %d\ncontent: %s\nerror: %s",
 		*line.Path,
 		line.Idx,
 		line.Content,
 		fmt.Sprintf(message, args...),
 	)
+	os.Exit(2)
 }

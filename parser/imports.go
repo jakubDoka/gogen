@@ -21,10 +21,10 @@ func (i Imp) Add(imp string) {
 }
 
 // Build turns Imp to valid go import syntax
-func (i Imp) Build(ignore string) string {
+func (i Imp) Build(ignore SS) string {
 	result := "import (\n"
 	for _, v := range i {
-		if v == ignore {
+		if ignore[v] {
 			continue
 		}
 		result += "\t\"" + v + "\"\n"
@@ -113,4 +113,13 @@ func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) 
 	}
 
 	return
+}
+
+type Counter map[string]int
+
+func (c Counter) Process(name string) int {
+
+	c[name]++
+
+	return c[name] - 1
 }

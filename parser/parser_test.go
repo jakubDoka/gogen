@@ -76,7 +76,7 @@ func TestExtractImps(t *testing.T) {
 func TestBuildImps(t *testing.T) {
 	test := Imp{"bb": "mm/bb", "ff": "ff/cc", "fff": "fff"}
 	result := "import (\n\t\"mm/bb\"\n\t\"ff/cc\"\n)\n"
-	res := test.Build("fff")
+	res := test.Build(SS{"fff": true})
 
 	if res != result {
 		t.Errorf("%q != %q", res, result)
@@ -138,10 +138,7 @@ func CompareBlocks(a, b BlockSlice) (bl bool) {
 }
 
 func TestNPack(t *testing.T) {
-	pck, err := NPack("gogen/test", nil)
-	if err != nil {
-		panic(err)
-	}
+	pck := NPack("gogen/test", nil)
 	bts, _ := json.MarshalIndent(pck, "", "  ")
 	t.Error(string(bts))
 }

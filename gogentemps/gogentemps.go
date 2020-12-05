@@ -26,7 +26,7 @@ type setA = Set
 type setB = Set
 
 //def(
-//rules DoubleSet<a, b, DoubleSet>
+//rules Doubleset<a, b, Doubleset>
 //dep Set<a, setA>
 //dep Set<b, setB>
 
@@ -37,9 +37,33 @@ type Doubleset struct {
 }
 
 // DoubleAppend ...
-func (b Doubleset) DoubleAppend(valA a, valB b) {
-	b.A.Add(valA)
-	b.B.Add(valB)
+func (d Doubleset) DoubleAppend(valA a, valB b) {
+	d.A.Add(valA)
+	d.B.Add(valB)
+}
+
+//)
+
+type c = string
+type d = string
+type setC = Doubleset
+type setD = Doubleset
+
+//def(
+//rules Quadrupleset<a, b, c, d, Quadrupleset>
+//dep Doubleset<a, b, setC>
+//dep Doubleset<c, d, setD>
+
+// Quadrupleset exists purely for testing purposes
+type Quadrupleset struct {
+	A setC
+	B setD
+}
+
+// QuadrupleAppend ...
+func (q Quadrupleset) QuadrupleAppend(valA a, valB b, valC c, valD d) {
+	q.A.DoubleAppend(valA, valB)
+	q.B.DoubleAppend(valC, valD)
 }
 
 //)

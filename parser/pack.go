@@ -1,9 +1,7 @@
 package parser
 
 import (
-	"fmt"
 	"gogen/dirs"
-	"gogen/gogentemps"
 	"gogen/str"
 	"path"
 	"strings"
@@ -15,7 +13,6 @@ import (
 
 /*gen(
 	gogentemps.Set<string, SS>
-	gogentemps.DoubleSet<int, string, DS>
 )*/
 
 // Pack is a go Package, it stores all information needed for code generation
@@ -24,47 +21,41 @@ type Pack struct {
 
 	Files   []File
 	Content []string
-	Defs    map[string]*Def
 
-	Generated gogentemps.Set
+	Defs      map[string]*Def
+	Cont      Counter
+	Generated map[string]*Rls
 }
 
 // NPack ...
-func NPack(imp string, line *dirs.Line) (pack *Pack, err error) {
-	p := &Pack{Defs: map[string]*Def{}, Generated: gogentemps.Set{}}
+func NPack(imp string, line *dirs.Line) (pack *Pack) {
+	p := &Pack{
+		Defs:      map[string]*Def{},
+		Cont:      Counter{},
+		Generated: map[string]*Rls{},
+		Import:    imp,
+	}
 
 	p.Import = imp
+
 	var ok bool
 	p.Path, ok = dirs.PackPath(imp)
 	if !ok {
 		if line == nil {
 			line = &dirs.Line{Path: &p.Path, Idx: -1, Content: "none"}
 		}
-		err = NError(*line, "package does not exist")
-		return
+		NError(*line, "package does not exist")
 	}
 
-	err = p.CollectFiles()
-	if err != nil {
-		return
-	}
+	p.CollectFiles()
 
 	p.CollectContent()
 
-	err = p.LoadImports()
-	if err != nil {
-		return
-	}
+	p.LoadImports()
 
-	err = p.ResolveDefBlocks()
-	if err != nil {
-		return
-	}
+	p.ResolveDefBlocks()
 
-	err = p.Generate()
-	if err != nil {
-		return
-	}
+	p.Generate()
 
 	pack = p
 	return
@@ -74,8 +65,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack, err error) {
 func (p *Pack) Generate() (err error) {
 	var (
 		content string
-		ignore  string
-		result  string
+		ignore  = SS{}
 
 		def *Def
 		ok  bool
@@ -84,59 +74,47 @@ func (p *Pack) Generate() (err error) {
 	)
 
 	requests, imports := p.CollectGenRequests()
-
-	for i := 0; i < len(requests); i++ {
-		line := requests[i]
-
-		args, name, raw, err := ParseRules(line)
-		if err != nil {
-			return err
-		}
-
-		if p.Generated[raw] {
+	for len(requests) != 0 {
+		rls := requests[0]
+		//fmt.Println(rls)
+		u := rls.GetUniqueness()
+		if _, ok := p.Generated[u]; ok {
+			requests = requests[1:]
 			continue
 		} else {
-			p.Generated.Add(raw)
+			p.Generated[u] = rls
 		}
 
-		if strings.Contains(name, ".") {
-			packName, name := str.SplitToTwo(name, '.')
-
-			pack, ok := AllPacks[packName]
+		if rls.IsExternal() {
+			pack, ok := AllPacks[rls.Pack]
 			if !ok {
-				return NError(line, "nonexistant package")
+				NError(rls.Line, "nonexistant package")
 			}
 
-			def, ok = pack.Defs[name]
+			def, ok = pack.Defs[rls.Name]
 			if !ok {
-				return NError(line, nonexistant)
+				NError(rls.Line, nonexistant)
 			}
-
-			imports.Append(def.Imports)
-
-			result, err = def.Produce(line, true, args...)
 
 			if !def.ImportSelf {
-				ignore = pack.Import
+				ignore.Add(pack.Import)
+			} else {
+				ignore.Rem(pack.Import)
 			}
 		} else {
-			def, ok = p.Defs[name]
+			def, ok = p.Defs[rls.Name]
 			if !ok {
-				fmt.Println(p.Defs)
-				return NError(line, nonexistant)
+				NError(rls.Line, nonexistant)
 			}
 
-			imports.Append(def.Imports)
-
-			result, err = def.Produce(line, false, args...)
-
-			ignore = p.Import
-
+			ignore.Add(p.Import)
 		}
-		requests = append(requests, def.Deps...)
-		if err != nil {
-			return err
-		}
+
+		imports.Append(def.Imports)
+
+		result, deps := def.Produce(rls, p.Cont, p.Generated)
+		requests = append(deps, requests[1:]...)
+
 		content += result
 	}
 
@@ -155,7 +133,7 @@ func (p *Pack) Generate() (err error) {
 }
 
 // CollectGenRequests ...
-func (p *Pack) CollectGenRequests() (req dirs.Paragraph, imports Imp) {
+func (p *Pack) CollectGenRequests() (req []*Rls, imports Imp) {
 	imports = Imp{}
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Generators) {
@@ -164,7 +142,7 @@ func (p *Pack) CollectGenRequests() (req dirs.Paragraph, imports Imp) {
 				if str.StartsWith(line.Content, "!") {
 					imports.Add(line.Content[1:])
 				} else {
-					req = append(req, line)
+					req = append(req, NRules(line))
 				}
 			}
 		}
@@ -180,17 +158,14 @@ func (p *Pack) LoadImports() (err error) {
 				l := str.RemInv(line.Content)
 				name := str.ImpNm(l)
 				if name == p.Name {
-					return NError(line, "self import")
+					NError(line, "self import")
 				}
+
 				if _, ok := AllPacks[name]; ok {
 					continue
 				}
-				var pack *Pack
-				pack, err = NPack(l, &line)
-				if err != nil {
-					return
-				}
-				AllPacks[name] = pack
+
+				AllPacks[name] = NPack(l, &line)
 			}
 		}
 	}
@@ -202,15 +177,13 @@ func (p *Pack) LoadImports() (err error) {
 func (p *Pack) ResolveDefBlocks() (err error) {
 	for _, f := range p.Files {
 		for _, b := range f.ExtractBlocks(Definition) {
-			df, err := NDef(
+			df := NDef(
 				p.Name,
 				p.Content,
 				b.Raw,
 				f.Imports,
+				p.Cont,
 			)
-			if err != nil {
-				return err
-			}
 			p.Defs[df.Name] = df
 		}
 	}

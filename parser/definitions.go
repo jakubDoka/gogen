@@ -3,23 +3,25 @@ package parser
 import (
 	"gogen/dirs"
 	"gogen/str"
+	"strconv"
 	"strings"
 )
 
 // Def is a template definition, it has methods to return
 // template results and also stores needed imports
 type Def struct {
-	Args    []string
-	Deps    dirs.Paragraph
+	*Rls
+
+	Deps    []*Rls
 	Imports Imp
 
 	ImportSelf bool
 
-	Name, Code, ExtCode string
+	Code, ExtCode string
 }
 
 // NDef ...
-func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (d *Def, err error) {
+func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont Counter) (d *Def) {
 	def := &Def{Imports: Imp{}}
 
 	var ln dirs.Line
@@ -29,15 +31,12 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (d *De
 		if str.StartsWith(line.Content, Rules) {
 			_, line.Content = str.SplitToTwo(line.Content, ' ')
 			if line.Content == "" {
-				err = NError(line, "missing definition")
+				NError(line, "missing definition")
 				return
 			}
 
 			ln = line
-			def.Args, def.Name, _, err = ParseRules(line)
-			if err != nil {
-				return
-			}
+			def.Rls = NRules(line)
 		} else {
 			raw[j] = line
 			j++
@@ -47,15 +46,19 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (d *De
 	raw = raw[:j]
 
 	if def.Name == "" {
-		err = NError(ln, "missing template rules")
-		return
+		NError(ln, "missing template rules")
 	}
 
+	args := make([]string, len(def.Args))
+	copy(args, def.Args)
+
 	for _, line := range raw {
-		internal, external, dep := def.ParseLine(line, name, content, imports)
+		internal, external, dep := def.ParseLine(line, name, content, args, imports)
 		if dep {
 			line.Content = name + "." + internal
-			def.Deps = append(def.Deps, line)
+			rules := NRules(line)
+			args = append(args, rules.GetNameSub())
+			def.Deps = append(def.Deps, rules)
 		} else {
 			def.Code += internal + "\n"
 			def.ExtCode += external + "\n"
@@ -72,11 +75,12 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp) (d *De
 }
 
 // ParseLine turns line of code to line that is usable for external generation and one for internal
-func (d *Def) ParseLine(line dirs.Line, name string, content []string, imports Imp) (code, exCode string, dep bool) {
-	var ln int
-	var lnl = len(line.Content)
-	var cont = line.Content
-	var i int
+func (d *Def) ParseLine(line dirs.Line, name string, content, args []string, imports Imp) (code, exCode string, dep bool) {
+	var (
+		ln, i int
+		lnl   = len(line.Content)
+		cont  = line.Content
+	)
 
 	dep = str.StartsWith(cont, Dependency)
 
@@ -103,7 +107,7 @@ o:
 			continue
 		}
 
-		for _, t := range d.Args {
+		for _, t := range args {
 			ln = len(t)
 
 			if !str.IsTheIdent(cont, t, i) {
@@ -148,47 +152,118 @@ o:
 }
 
 // Produce forms a template
-func (d *Def) Produce(line dirs.Line, external bool, args ...string) (result string, err error) {
-	if len(args) != len(d.Args) {
-		err = NError(line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(args))
-		return
+func (d *Def) Produce(rules *Rls, cont Counter, done map[string]*Rls) (result string, deps []*Rls) {
+
+	if len(rules.Args) != len(d.Args) {
+		NError(rules.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(rules.Args))
 	}
 
-	if external {
+	if rules.IsExternal() {
 		result = d.ExtCode
 	} else {
 		result = d.Code
 	}
 
-	for i, a := range args {
-		result = strings.ReplaceAll(result, Gibrich+d.Args[i], a)
-		for j := range d.Deps {
-			d.Deps[j].Content = strings.ReplaceAll(d.Deps[j].Content, Gibrich+d.Args[i], a)
+	deps = make([]*Rls, len(d.Deps))
+	for i, d := range d.Deps {
+		deps[i] = d.Copy()
+	}
+
+	for i, a := range rules.Args {
+		ga := Gibrich + d.Args[i]
+		result = strings.ReplaceAll(result, ga, a)
+		for _, dp := range deps {
+			for i := range dp.Args {
+				if dp.Args[i] == ga {
+					dp.Args[i] = a
+				}
+			}
 		}
 	}
 
+	for _, dp := range deps {
+		val, ok := done[dp.GetUniqueness()]
+		if !ok {
+			dp.Idx = cont.Process(dp.OldName)
+			dp.UpdateNameSub()
+		} else {
+			val.OldName = dp.OldName
+			dp = val
+		}
+		result = strings.ReplaceAll(result, Gibrich+dp.OldName, dp.GetNameSub())
+	}
+
 	return
 }
 
-// ParseRules take line witch should contain template definition and parses it
-func ParseRules(line dirs.Line) (def []string, name, raw string, err error) {
-	raw = str.RemInv(line.Content) // we don't want them
+// *Rls are template rules, they can be part of a template definition or template request
+type Rls struct {
+	Args []string
 
-	name, raw = str.SplitToTwo(raw, '<')
-	if raw == "" {
-		err = NError(line, "missing parameters")
+	Idx                 int
+	Name, Pack, OldName string
+
+	Line dirs.Line
+}
+
+// NRules take line witch should contain template definition and parses it
+func NRules(line dirs.Line) (rules *Rls) {
+	rules = &Rls{Line: line}
+
+	rw := str.RemInv(line.Content) // we don't want them
+
+	rules.Name, rw = str.SplitToTwo(rw, '<')
+	if rw == "" {
+		NError(line, "missing parameters")
+	}
+
+	pck, name := str.SplitToTwo(rules.Name, '.')
+	if name != "" {
+		rules.Name, rules.Pack = name, pck
+	}
+
+	rw = rw[:len(rw)-1] // excluding ">"
+
+	rules.Args = strings.Split(rw, ",")
+	if len(rules.Args) < 2 {
+		NError(line, "template rules has less then 2 arguments, that is considered redundant and incorrect as you have to have at least one argument as template parameter an one as name substitute")
+	}
+
+	rules.OldName = rules.GetNameSub()
+
+	return
+}
+
+// GetNameSub return template name substitute
+func (r *Rls) GetNameSub() string {
+	return r.Args[len(r.Args)-1]
+}
+
+// UpdateNameSub updates name substitute so there is no name collizion
+func (r *Rls) UpdateNameSub() {
+	if r.Idx == 0 {
 		return
 	}
+	r.Args[len(r.Args)-1] = r.GetNameSub() + strconv.Itoa(r.Idx)
+}
 
-	raw = raw[:len(raw)-1] // excluding ">"
+// IsExternal returns whether definition is external
+func (r *Rls) IsExternal() bool {
+	return r.Pack != ""
+}
 
-	def = strings.Split(raw, ",")
+func (r *Rls) GetUniqueness() (res string) {
+	res = r.Name
+	for _, a := range r.Args[:len(r.Args)-1] {
+		res += a
+	}
+
 	return
 }
 
-func max(a, b int) int {
-	if a < b {
-		return b
-	}
-	return a
+func (r *Rls) Copy() *Rls {
+	nr := *r
+	nr.Args = make([]string, len(r.Args))
+	copy(nr.Args, r.Args)
+	return &nr
 }

@@ -121,6 +121,12 @@ func (p Paragraph) GetContent() []string {
 	return res
 }
 
+func (p Paragraph) Copy() Paragraph {
+	np := make(Paragraph, len(p))
+	copy(np, p)
+	return np
+}
+
 // Line is file line, it stores its index and path for easy logging
 type Line struct {
 	Path    *string

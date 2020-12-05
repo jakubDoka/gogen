@@ -31,6 +31,10 @@ type a = interface{}
 	Hello<float64, r>
 	Hello<Bar, h>
 	test2.min<float64, MinF64>
+	gogentemps.Doubleset<int, float64, BB>
+	gogentemps.Doubleset<int, string, HH>
+	gogentemps.Quadrupleset<int, float64, bool, int, KK>
+	gogentemps.Quadrupleset<int, string, int8, float32, NN>
 )*/
 
 //def(
