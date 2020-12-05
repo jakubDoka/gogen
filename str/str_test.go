@@ -38,7 +38,7 @@ func TestGoDefNms(t *testing.T) {
 
 	result := []string{"a", "b", "c"}
 
-	res := GoDefNms(test)
+	res := ParseMultilineGoDef(test)
 
 	for i, v := range result {
 		if v != res[i] {

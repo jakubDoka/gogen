@@ -12,8 +12,9 @@ type Block struct {
 	Start, End string
 }
 
-// Blocks used when parsing
+// some dirty global state
 var (
+	// Blocks used when parsing
 	Definition   = Block{"//def(", "//)"}
 	Generators   = Block{"/*gen(", ")*/"}
 	Imports      = Block{"/*imp(", ")*/"}
@@ -28,12 +29,18 @@ var (
 		MultiComment,
 	}
 
+	// def prefixes
 	RulesIdent      = "//rules"
 	DependencyIdent = "//dep"
 
-	Gibrich    = "____"
+	// its highly unlikely tha anyone will use 4 underscores in a row
+	// so this is used to mark template arguments in a code
+	Gibrich = "____"
+
+	// Name of a output file
 	OutputFile = "gogen-output.go"
 
+	// Its better because i don't have to pass map everywhere
 	AllPacks = map[string]*Pack{}
 )
 
@@ -61,8 +68,9 @@ func IsBlockEnd(st string) (bool, Block) {
 	return false, Block{}
 }
 
-// NError formats an error
-func NError(line dirs.Line, message string, args ...interface{}) {
+// Exit prints an error and exits application, because this is just console app
+// it is nice simplification that avoids tedious error handling
+func Exit(line dirs.Line, message string, args ...interface{}) {
 	fmt.Printf("file: %s\nline: %d\nerror: %s\n",
 		*line.Path,
 		line.Idx,

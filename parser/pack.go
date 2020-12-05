@@ -28,7 +28,7 @@ type Pack struct {
 	Generated map[string]*Rules
 }
 
-// NPack ...
+// NPack creates new package, package can recursively create dependent packages
 func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p := &Pack{
 		Defs:      map[string]*Def{},
@@ -45,7 +45,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 		if line == nil {
 			line = &dirs.Line{Path: &p.Path, Idx: -1, Content: "none"}
 		}
-		NError(*line, "package does not exist")
+		Exit(*line, "package does not exist")
 	}
 
 	p.CollectFiles()
@@ -57,6 +57,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p.ResolveDefBlocks()
 
 	p.Generate()
+
 	pack = p
 	return
 }
@@ -88,13 +89,13 @@ func (p *Pack) Generate() (err error) {
 		if rls.IsExternal() {
 			pack, ok := AllPacks[rls.Pack]
 			if !ok {
-				NError(rls.Line, "nonexistant package")
+				Exit(rls.Line, "nonexistant package")
 			}
 
 			def, ok = pack.Defs[rls.Name]
 			if !ok {
 				fmt.Println(rls)
-				NError(rls.Line, nonexistant)
+				Exit(rls.Line, nonexistant)
 			}
 
 			if !def.ImportSelf {
@@ -105,7 +106,7 @@ func (p *Pack) Generate() (err error) {
 		} else {
 			def, ok = p.Defs[rls.Name]
 			if !ok {
-				NError(rls.Line, nonexistant)
+				Exit(rls.Line, nonexistant)
 			}
 
 			ignore.Add(p.Import)
@@ -151,7 +152,8 @@ func (p *Pack) CollectGenRequests() (req []*Rules, imports Imp) {
 	return
 }
 
-// LoadImports loads all dependant packages
+// LoadImports creates all dependant packages, even if they are not used, code inside packages can be generated,
+// this makes it easy to bulk update as you can import all targeted packages to the root package
 func (p *Pack) LoadImports() (err error) {
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Imports) {
@@ -159,7 +161,7 @@ func (p *Pack) LoadImports() (err error) {
 				l := str.RemInv(line.Content)
 				name := str.ImpNm(l)
 				if name == p.Name {
-					NError(line, "self import")
+					Exit(line, "self import")
 				}
 
 				if _, ok := AllPacks[name]; ok {
@@ -192,8 +194,9 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 	return
 }
 
-// CollectContent collects all names of definitions in packages and all
-// blocks important for gogen
+// CollectContent collects all names of definitions in package and all
+// gogen-blocks, lines that are contained in blocks are also stored in them end excluded
+// from ewerithing else.
 func (p *Pack) CollectContent() {
 	for i, f := range p.Files {
 		var content []string
@@ -202,9 +205,9 @@ func (p *Pack) CollectContent() {
 	}
 }
 
-// CollectFiles stores all files as lines
+// CollectFiles stores all files as paragraphs
 func (p *Pack) CollectFiles() (err error) {
-	fl, err := dirs.ListFilePaths(p.Path, ".go")
+	fl, err := dirs.ListFilePaths(p.Path, ".go") // TODO make filter configurable
 	if err != nil {
 		return
 	}

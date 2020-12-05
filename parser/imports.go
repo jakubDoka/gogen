@@ -5,39 +5,7 @@ import (
 	"gogen/str"
 )
 
-// Imp symbolizes imports object
-type Imp map[string]string
-
-// Append appens argument to caller
-func (i Imp) Append(imp Imp) {
-	for k, v := range imp {
-		i[k] = v
-	}
-}
-
-// Add adds import to Imp
-func (i Imp) Add(imp string) {
-	i[str.ImpNm(imp)] = imp
-}
-
-// Build turns Imp to valid go import syntax
-func (i Imp) Build(ignore SS) string {
-	result := "import (\n"
-	for _, v := range i {
-		if ignore[v] {
-			continue
-		}
-		result += "\t\"" + v + "\"\n"
-	}
-
-	if result == "import (\n" {
-		return ""
-	}
-
-	return result + ")\n"
-}
-
-// ExtractImps collects all imports in a file and saves to a map
+// ExtractImps collects all imports in a file and saves them to a map
 func ExtractImps(raw dirs.Paragraph) (Imp, int) {
 	imports := Imp{}
 	var inside bool
@@ -75,7 +43,40 @@ func ExtractImps(raw dirs.Paragraph) (Imp, int) {
 	return imports, last
 }
 
-// CollectContent collects all package content that can be imported
+// Imp symbolizes imports object
+type Imp map[string]string
+
+// Append appens argument to caller
+func (i Imp) Append(imp Imp) {
+	for k, v := range imp {
+		i[k] = v
+	}
+}
+
+// Add adds import to Imp
+func (i Imp) Add(imp string) {
+	i[str.ImpNm(imp)] = imp
+}
+
+// Build turns Imp to valid go import syntax
+func (i Imp) Build(ignore SS) string {
+	result := "import (\n"
+	for _, v := range i {
+		if ignore[v] {
+			continue
+		}
+		result += "\t\"" + v + "\"\n"
+	}
+
+	if result == "import (\n" {
+		return ""
+	}
+
+	return result + ")\n"
+}
+
+// CollectContent collects all package content that can be imported from other package.
+// This is important for external generation.
 func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) {
 	var inBlock bool
 	var current BlockSlice
@@ -101,10 +102,10 @@ func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) 
 		}
 
 		if ok, _ := str.IsGoDef(l); ok {
-			name := str.RemInv(str.GoDefNm(l))
+			name := str.ParseSimpleGoDef(l)
 			if name == "" {
 				if str.EndsWith(str.RemInv(line.Content), "(") { // multiline def
-					content = append(content, str.GoDefNms(raw.GetContent()[i+1:])...)
+					content = append(content, str.ParseMultilineGoDef(raw.GetContent()[i+1:])...)
 				}
 			} else if str.IsUpper(name[0]) {
 				content = append(content, name)

@@ -25,7 +25,7 @@ func NRules(line dirs.Line, isDef bool) (rules *Rules) {
 
 	rules.Name, rw = str.SplitToTwo(rw, '<')
 	if rw == "" {
-		NError(line, "missing parameters")
+		Exit(line, "missing parameters")
 	}
 
 	pck, name := str.SplitToTwo(rules.Name, '.')
@@ -39,7 +39,7 @@ func NRules(line dirs.Line, isDef bool) (rules *Rules) {
 
 	if isDef {
 		if len(rules.Args) == 0 {
-			NError(line, "template rules has less then 1 argument, that is considered redundant")
+			Exit(line, "template rules has less then 1 argument, that is considered redundant")
 		}
 		rules.Args = append(rules.Args, rules.Name)
 	}

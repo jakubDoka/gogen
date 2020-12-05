@@ -30,7 +30,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 		if str.StartsWith(line.Content, RulesIdent) {
 			_, line.Content = str.SplitToTwo(line.Content, ' ')
 			if line.Content == "" {
-				NError(line, "missing definition")
+				Exit(line, "missing definition")
 				return
 			}
 
@@ -45,7 +45,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 	raw = raw[:j]
 
 	if def.Name == "" {
-		NError(ln, "missing template rules")
+		Exit(ln, "missing template rules")
 	}
 
 	args := make([]string, len(def.Args))
@@ -156,7 +156,7 @@ o:
 func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (result string, deps []*Rules) {
 
 	if len(rules.Args) != len(d.Args) {
-		NError(rules.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(rules.Args))
+		Exit(rules.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(rules.Args))
 	}
 
 	if rules.IsExternal() {
