@@ -18,7 +18,7 @@ func Max(a, b int) int {
 //)
 ```
 
-Def block has a rules annotation, rules define how your template work. In this case int is a template argument that will get replaced when generating code. Likewise Ident will be replaced with identifier. As go does not have polymorphism you have to name function your self. Next is gen-block.
+Def block has a rules annotation, rules define how your template work. In this case int is a template argument that will get replaced when generating code. Naming a function same as template is necessary so gogen knows what to replace with unique identifier. Thats because go does not have polymorphism, you have to name function your self. Next is gen-block:
 
 ```go
 /*gen(
@@ -27,7 +27,7 @@ Def block has a rules annotation, rules define how your template work. In this c
 	Max<byte, MaxB>
 )*/
 ```
-after running `gogen <package import>` (gogen project/main) gogen creates new file named gogen-output.go with following content
+You may noticed that there is one extra argument and that is the unique identifier you have to provide. After running `gogen <package import>` (gogen project/max) gogen creates new file named gogen-output.go with following content:
 
 ```go
 package max
@@ -54,7 +54,7 @@ return b
 }
 ```
 
-This is how you can generate your templates, you have to tell what you need, but its already better then defining them all by hand, now you can make a change to original and just rerun generation. Cross package generation is also supported. We have imp-block for this reason:
+This is how you can generate your templates, you have to tell what you need, but its already better then defining them all by hand, now you can make a change to original and just rerun generation. There is also no indentation, i admit I em to lazy to support that as its not necessary for code to compile. Cross package generation is also supported. We have imp-block for this reason:
 
 ```go
 /*imp(
@@ -76,7 +76,7 @@ Last type of block is ign-block that its for ignoring pieces of code. Gogen take
 
 ## advanced generation
 
-Its little bit tedious but yo can combine your templates together with `dep` annotation, but firs we will define one small template
+Its little bit tedious but yo can combine your templates together with `dep` annotation, but firs we will define one small template:
 
 ```go
 //def(
@@ -90,7 +90,7 @@ func Min(a, b int) int {
 //)
 ```
 
-Okay and now we will combine min and max and create clamp function
+Okay and now we will combine min and max and create clamp function:
 
 ```go
 //def(
@@ -105,7 +105,7 @@ func Clamp(val, min, max int) int {
 //)
 ```
 
-Lets generate our function like usual
+Notice that template in dep annotation has to exist and you are actually using is as request, same as in gen block. Lets generate our function like usual:
 
 ```go
 /*gen(
