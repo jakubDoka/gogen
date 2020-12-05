@@ -1,4 +1,4 @@
-<img src="assets/logo.png" align="right" width=200 height=150/>
+<img src="assets/logo.png" align="right" width=150 height=150/>
 
 # gogen (golang code generator)
 
