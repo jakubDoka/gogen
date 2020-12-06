@@ -15,7 +15,10 @@ func ParseSimpleGoDef(line string) []string {
 
 	for i := 0; i < len(line); i++ {
 		if !IsIdent(line[i]) {
-			return []string{line[:i]}
+			if i != 0 {
+				return []string{line[:i]}
+			}
+			break
 		}
 	}
 

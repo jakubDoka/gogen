@@ -84,6 +84,7 @@ func (d *Def) ParseLine(line dirs.Line, name string, content, args []string, imp
 		cont  = line.Content
 	)
 
+	args = append(args, ConstructorPrefix+args[len(args)-1])
 	dep = str.StartsWith(cont, DependencyIdent)
 
 	if dep {
@@ -181,6 +182,8 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 			}
 		}
 	}
+
+	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+rules.GetNameSub())
 
 	for _, dp := range deps {
 		val, ok := done[dp.Summarize()]

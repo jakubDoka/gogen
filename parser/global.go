@@ -35,7 +35,8 @@ var (
 
 	// its highly unlikely tha anyone will use 4 underscores in a row
 	// so this is used to mark template arguments in a code
-	Gibrich = "____"
+	Gibrich           = "____"
+	ConstructorPrefix = "N"
 
 	// Name of a output file
 	OutputFile = "gogen-output.go"
