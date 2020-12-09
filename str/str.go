@@ -1,5 +1,13 @@
 package str
 
+/*imp(
+	gogen/templates
+)*/
+
+/*gen(
+	templates.Vec<string, Vec>
+)*/
+
 // IsUpper returns whether byte is upper case
 func IsUpper(b byte) bool {
 	return b >= 'A' && b <= 'Z'
@@ -44,4 +52,28 @@ func SplitToTwo(str string, sep byte) (a, b string) {
 		}
 	}
 	return str, ""
+}
+
+// RevSplit is similar to strings.Split but it starts from back of a string and
+// will split string to at most count substrings
+func RevSplit(str, sep string, count int) (res Vec) {
+	l, sl := len(str), len(sep)
+	for i := l; i >= sl && count != 1; i-- {
+		if sep == str[i-sl:i] {
+			if l != i {
+				res = append(res, str[i:l])
+				count--
+			}
+			i -= sl
+			l = i
+		}
+	}
+
+	if 0 != l {
+		res = append(res, str[:l])
+	}
+
+	res.Reverse()
+
+	return
 }

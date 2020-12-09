@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"gogen/dirs"
 	"gogen/str"
 	"path"
@@ -94,7 +93,6 @@ func (p *Pack) Generate() (err error) {
 
 			def, ok = pack.Defs[rls.Name]
 			if !ok {
-				fmt.Println(rls)
 				Exit(rls.Line, nonexistant)
 			}
 
