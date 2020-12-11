@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 )
 
 // Gopath is value of GOPATH environment variable
@@ -33,6 +34,23 @@ func PackPath(imp string) (string, bool) {
 func PackImport(p string) string {
 	ln := len(path.Join(Gopath, "src")) + 1
 	return p[ln:]
+}
+
+// PathName returns name of a base of a path without extention
+func PathName(p string) string {
+	p = NormPath(p)
+
+	start, end := str.LastByte(p, '\\')+1, str.LastByte(p, '.')
+	if end == -1 {
+		return p[start:]
+	}
+
+	return p[start:end]
+}
+
+// NormPath returns path witch has all / replaced with \
+func NormPath(p string) string {
+	return strings.ReplaceAll(p, "/", "\\")
 }
 
 // ListFilePaths returns all paths to files in one directory.
@@ -121,6 +139,7 @@ func (p Paragraph) GetContent() []string {
 	return res
 }
 
+// Copy ...
 func (p Paragraph) Copy() Paragraph {
 	np := make(Paragraph, len(p))
 	copy(np, p)
