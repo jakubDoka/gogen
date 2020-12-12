@@ -4,15 +4,14 @@ import (
 	"gogen/dirs"
 	"gogen/str"
 	"path"
-	"strings"
 )
 
 /*imp(
-	gogen/gogentemps
+	gogen/templates
 )*/
 
 /*gen(
-	gogentemps.Set<string, SS>
+	templates.Set<string, SS>
 )*/
 
 // Pack is a go Package, it stores all information needed for code generation
@@ -214,10 +213,6 @@ func (p *Pack) CollectFiles() (err error) {
 
 	var last int
 	for i, f := range fl {
-		if strings.Contains(f, OutputFile) {
-			continue
-		}
-
 		fl := File{}
 
 		fl.Raw, p.Name, err = dirs.FileAsLines(f)

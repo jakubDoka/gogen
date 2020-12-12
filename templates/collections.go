@@ -79,7 +79,62 @@ func (v *Vec) Pop() interface{} {
 // Insert inserts value to given index
 func (v *Vec) Insert(idx int, val interface{}) {
 	dv := *v
-	*v = append(append(append(make(Vec, len(dv)+1), dv[:idx]...), val), dv[idx:]...)
+	*v = append(append(append(make(Vec, 0, len(dv)+1), dv[:idx]...), val), dv[idx:]...)
+}
+
+// Reverse reverses content of slice
+func (v Vec) Reverse() {
+	for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
+		v.Swap(i, j)
+	}
+}
+
+// Last returns last element of slice
+func (v Vec) Last() interface{} {
+	return v[len(v)-1]
+}
+
+// Sort is quicksort for Vec, because this is a template comp function is necessary
+func (v Vec) Sort(comp func(a, b interface{}) bool) {
+	ps := IntVec{-1, len(v)}
+	var p interface{}
+	var l, e, s, j int
+	for {
+		l = len(ps)
+		e = ps[l-1] - 1
+		if e <= 0 {
+			return
+		}
+		s = ps[l-2] + 1
+		p = v[e]
+		if s < e {
+			for j = s; j < e; j++ {
+				if comp(v[j], p) {
+					v.Swap(s, j)
+					s++
+				}
+			}
+			v.Swap(s, e)
+			ps.Insert(l-1, s)
+		} else {
+			ps = ps[:l-1]
+		}
+	}
+}
+
+// Eq compares two Vec
+func (v Vec) Eq(o Vec) bool {
+	if len(v) != len(o) {
+		return false
+	}
+
+	for i := range v {
+		if v[i] != o[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Swap swaps two elements
@@ -87,12 +142,7 @@ func (v Vec) Swap(a, b int) {
 	v[a], v[b] = v[b], v[a]
 }
 
-// Reverse reverses content of slice
-func (v Vec) Reverse() {
-	for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
-		v[i], v[j] = v[j], v[i]
-	}
-}
+//)
 
 //def(
 //rules Storage<interface{}>
@@ -191,3 +241,7 @@ func (s *Storage) Clear() {
 }
 
 //)
+
+/*gen(
+	Vec<int, IntVec>
+)*/
