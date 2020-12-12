@@ -13,4 +13,5 @@ func TestVecSort(t *testing.T) {
 			t.Error(v, "!=", res)
 		}
 	}
+	t.Fail()
 }

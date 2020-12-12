@@ -72,19 +72,28 @@ func (v IntVec) Last() int {
 return v[len(v)-1]
 }
 
-// Sort is quicksort for IntVec, because this is a template comp function is necessary
+// Sort is quicksort for IntVec, because this is part of a template comp function is necessary
 func (v IntVec) Sort(comp func(a, b int) bool) {
-ps := IntVec{-1, len(v)}
-var p int
-var l, e, s, j int
+ps := make(IntVec, 2, len(v))
+ps[0], ps[1] = -1, len(v)
+
+var (
+p int
+
+l, e, s, j int
+)
+
 for {
 l = len(ps)
+
 e = ps[l-1] - 1
 if e <= 0 {
 return
 }
+
 s = ps[l-2] + 1
 p = v[e]
+
 if s < e {
 for j = s; j < e; j++ {
 if comp(v[j], p) {
@@ -92,6 +101,7 @@ v.Swap(s, j)
 s++
 }
 }
+
 v.Swap(s, e)
 ps.Insert(l-1, s)
 } else {
