@@ -2,10 +2,12 @@ package dirs
 
 import (
 	"bufio"
+	"fmt"
 	"gogen/str"
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -40,7 +42,7 @@ func PackImport(p string) string {
 func PathName(p string) string {
 	p = NormPath(p)
 
-	start, end := str.LastByte(p, '\\')+1, str.LastByte(p, '.')
+	start, end := str.LastByte(p, '/')+1, str.LastByte(p, '.')
 	if end == -1 {
 		return p[start:]
 	}
@@ -50,7 +52,30 @@ func PathName(p string) string {
 
 // NormPath returns path witch has all / replaced with \
 func NormPath(p string) string {
-	return strings.ReplaceAll(p, "/", "\\")
+	return strings.ReplaceAll(p, "\\", "/")
+}
+
+// RecListFiles lists all files with extencion equal to ext
+func RecListFiles(p, ext string) []string {
+	return RecListPaths(p, func(f os.FileInfo) bool {
+		return str.EndsWith(f.Name(), ext)
+	})
+}
+
+// RecListPaths lists all of items filtered by filter
+func RecListPaths(p string, filter func(f os.FileInfo) bool) (res []string) {
+	filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if filter(info) {
+			res = append(res, path)
+		}
+		return err
+	})
+
+	return
 }
 
 // ListFilePaths returns all paths to files in one directory.

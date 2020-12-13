@@ -152,6 +152,39 @@ func (v Vec) Swap(a, b int) {
 	v[a], v[b] = v[b], v[a]
 }
 
+// ForEach is a standard foreach method. Its shortcut for modifying all elements
+func (v Vec) ForEach(con func(i int, e interface{}) interface{}) {
+	for i, e := range v {
+		v[i] = con(i, e)
+	}
+}
+
+// Filter leaves only elements for with filter returns true
+func (v Vec) Filter(filter func(e interface{}) bool) {
+	var i int
+	for _, e := range v {
+		if filter(e) {
+			v[i] = e
+			i++
+		}
+	}
+
+	v.Truncate(i)
+}
+
+// Find returns first element for which find returns true along with index,
+// if there is none, index equals -1
+func (v Vec) Find(find func(e interface{}) bool) (idx int, res interface{}) {
+	for i, e := range v {
+		if find(e) {
+			return i, e
+		}
+	}
+
+	idx = -1
+	return
+}
+
 //)
 
 //def(
