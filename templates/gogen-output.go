@@ -109,21 +109,6 @@ func (v IntVec) Sort(comp func(a, b int) bool) {
 	}
 }
 
-// Eq compares two IntVec
-func (v IntVec) Eq(o IntVec) bool {
-	if len(v) != len(o) {
-		return false
-	}
-
-	for i := range v {
-		if v[i] != o[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
 // Swap swaps two elements
 func (v IntVec) Swap(a, b int) {
 	v[a], v[b] = v[b], v[a]

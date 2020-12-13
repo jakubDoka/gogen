@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"gogen/dirs"
 	"gogen/str"
 	"strings"
@@ -48,8 +49,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 		Exit(ln, "missing template rules")
 	}
 
-	args := make([]string, len(def.Args))
-	copy(args, def.Args)
+	args := def.StringArgs()
 
 	for _, line := range raw {
 		internal, external, dep := def.ParseLine(line, name, content, args, imports)
@@ -172,11 +172,17 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 	}
 
 	for i, a := range rules.Args {
-		ga := Gibrich + d.Args[i]
-		result = strings.ReplaceAll(result, ga, a)
+		if !a.IsName {
+			c := a.Copy()
+			c.OldName = d.Args[i].Name
+			deps = append(deps, c)
+			continue
+		}
+		ga := Gibrich + d.Args[i].Name
+		result = strings.ReplaceAll(result, ga, a.Name)
 		for _, dp := range deps {
 			for i := range dp.Args {
-				if dp.Args[i] == ga {
+				if dp.Args[i].Name == ga {
 					dp.Args[i] = a
 				}
 			}
@@ -193,6 +199,9 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 		} else {
 			val.OldName = dp.OldName
 			dp = val
+		}
+		if rules.Name == "Vec" && rules.Pack == "templates" {
+			fmt.Println(dp.OldName)
 		}
 		result = strings.ReplaceAll(result, Gibrich+dp.OldName, dp.GetNameSub())
 	}

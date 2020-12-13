@@ -2,9 +2,13 @@
 
 # gogen (golang code generator)
 
- Gogen is a very simple code generator. It does not force you to write code that would not be compilable, nor wrap your code in comments. You use comments just as orientation for gogen. All you need to do to install gogen is building this repository on your os and adding the root of the repo to your path environment variable.
+Gogen is a simple code generator. It allows you to write generic code in golang or turn any existing code into template with no more then 3 short lines of comments. You don't have to apply any special syntax to your code that would be disliked by compiler. Nested definitions are supported, so we can say that you can generate almost anything, however complex it may be.
 
-# annotations
+# Installation
+
+I assume you have golang already installed, you don't need anything other then that. Just use `go get github.com/jakubDoka/gogen`, then use `go build gogen.go` and finally add file with executable to your `path` environment variable. This way you can use `gogen` command from anywhere you desire.   
+
+# Tutorial
 
 Nothing can be done without annotations as parsing all your code, as possible template would be inefficient. Gogen uses annotation blocks witch restrict what gogen should care about or what to ignore. Blocks then can have further annotations. Always close your blocks or they will get ignored. Lets start with a core piece, def-block.
 
@@ -78,6 +82,16 @@ Last type of block is ign-block that its for ignoring pieces of code. Gogen take
 
 ## advanced generation
 
+You can make nested gen requests if you really need. Nesting depth isn't limitless, you can get stackOverflow if you try really hard. So basically you can generate 2D Slice from template like this.
+
+```go
+/*gen(
+	templates.Vec<templates.Vec<int>, IntVec2D> 
+)*/
+```
+
+Notice that we don't specify name for inner requests, gogen will generate own identifier or reuse already generated template if it exists.
+
 Its little bit tedious but yo can combine your templates together with `dep` annotation, but firs we will define one small template:
 
 ```go
@@ -143,7 +157,6 @@ return b
 # todo
 
 This is a section with listed features that should be implemented, contributors are welcomed
-* support nested definitions
 * make block syntax configurable
 * make output file name configurable
 

@@ -132,21 +132,6 @@ func (v Vec) Sort(comp func(a, b interface{}) bool) {
 	}
 }
 
-// Eq compares two Vec
-func (v Vec) Eq(o Vec) bool {
-	if len(v) != len(o) {
-		return false
-	}
-
-	for i := range v {
-		if v[i] != o[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
 // Swap swaps two elements
 func (v Vec) Swap(a, b int) {
 	v[a], v[b] = v[b], v[a]

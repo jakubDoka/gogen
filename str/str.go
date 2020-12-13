@@ -56,9 +56,35 @@ func SplitToTwo(str string, sep byte) (a, b string) {
 
 // RevSplit is similar to strings.Split but it starts from back of a string and
 // will split string to at most count substrings
-func RevSplit(str, sep string, count int) (res Vec) {
+func RevSplit(str, sep string, count int, ign ...Block) (res Vec) {
 	l, sl := len(str), len(sep)
+	var in bool
+	var cur Block
+o:
 	for i := l; i >= sl && count != 1; i-- {
+		for _, b := range ign {
+			if in {
+				l := len(b[1])
+				if b == cur && i-l >= 0 && str[i-l:i] == b[1] {
+					in = false
+					i -= l
+					continue o
+				}
+			} else {
+				l := len(b[0])
+				if i-l >= 0 && str[i-l:i] == b[0] {
+					in = true
+					i -= l
+					cur = b
+					continue o
+				}
+			}
+		}
+
+		if in {
+			continue
+		}
+
 		if sep == str[i-sl:i] {
 			if l != i {
 				res = append(res, str[i:l])
@@ -77,3 +103,5 @@ func RevSplit(str, sep string, count int) (res Vec) {
 
 	return
 }
+
+type Block [2]string

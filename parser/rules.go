@@ -4,54 +4,74 @@ import (
 	"gogen/dirs"
 	"gogen/str"
 	"strconv"
-	"strings"
 )
 
 // Rules are template rules, they can be part of a template definition, dependency or template request
 type Rules struct {
-	Args []string
+	Args []*Rules
 
-	Idx                 int
+	Idx int
+
+	IsName bool
+
 	Name, Pack, OldName string
 
 	Line dirs.Line
 }
 
 // NRules take line and parses a Rules, pas true if you need to parse definition rules
-func NRules(line dirs.Line, isDef bool) (rules *Rules) {
-	rules = &Rules{Line: line}
+func NRules(line dirs.Line, isDef bool, sig ...struct{}) (r *Rules) {
+	nr := len(sig) == 0
+	r = &Rules{Line: line}
 
-	rw := str.RemInv(line.Content) // we don't want them
+	rw := line.Content
 
-	rules.Name, rw = str.SplitToTwo(rw, '<')
-	if rw == "" {
-		Exit(line, "missing parameters")
+	if nr {
+		rw = str.RemInv(rw)
 	}
 
-	pck, name := str.SplitToTwo(rules.Name, '.')
+	r.Name, rw = str.SplitToTwo(rw, '<')
+	if rw == "" {
+		if nr {
+			Exit(line, "missing rules structure")
+		}
+		r.IsName = true
+		return
+	}
+
+	pck, name := str.SplitToTwo(r.Name, '.')
 	if name != "" {
-		rules.Name, rules.Pack = name, pck
+		r.Name, r.Pack = name, pck
 	}
 
 	rw = rw[:len(rw)-1] // excluding ">"
 
-	rules.Args = strings.Split(rw, ",")
+	args := str.RevSplit(rw, ",", -1, str.Block{"<", ">"})
 
-	if isDef {
-		if len(rules.Args) == 0 {
-			Exit(line, "template rules has less then 1 argument, that is considered redundant")
+	for _, a := range args {
+		line.Content = a
+		n := NRules(line, true, struct{}{})
+		if isDef && nr && !n.IsName {
+			Exit(line, "nested definition not allowed")
 		}
-		rules.Args = append(rules.Args, rules.Name)
+		r.Args = append(r.Args, n)
 	}
 
-	rules.OldName = rules.GetNameSub()
+	if isDef {
+		if len(r.Args) == 0 {
+			Exit(line, "template rules has less then 1 argument, template is redundant")
+		}
+		r.Args = append(r.Args, &Rules{Name: r.Name, IsName: true})
+	}
+
+	r.OldName = r.GetNameSub()
 
 	return
 }
 
 // GetNameSub return template name substitute
 func (r *Rules) GetNameSub() string {
-	return r.Args[len(r.Args)-1]
+	return r.Args[len(r.Args)-1].Name
 }
 
 // UpdateNameSub updates name substitute so there is no name collizion
@@ -59,7 +79,7 @@ func (r *Rules) UpdateNameSub() {
 	if r.Idx == 0 {
 		return
 	}
-	r.Args[len(r.Args)-1] = r.GetNameSub() + strconv.Itoa(r.Idx)
+	r.Args[len(r.Args)-1].Name = r.GetNameSub() + strconv.Itoa(r.Idx)
 }
 
 // IsExternal returns whether definition is external
@@ -71,7 +91,7 @@ func (r *Rules) IsExternal() bool {
 func (r *Rules) Summarize() (res string) {
 	res = r.Name
 	for _, a := range r.Args[:len(r.Args)-1] {
-		res += a
+		res += a.Name
 	}
 
 	return
@@ -80,7 +100,19 @@ func (r *Rules) Summarize() (res string) {
 // Copy copies Rules, this is necessary sa Rules contains slice
 func (r *Rules) Copy() *Rules {
 	nr := *r
-	nr.Args = make([]string, len(r.Args))
-	copy(nr.Args, r.Args)
+	nr.Args = make([]*Rules, len(r.Args))
+	for i := range nr.Args {
+		nr.Args[i] = r.Args[i].Copy()
+	}
 	return &nr
+}
+
+// StringArgs returns args as slice of strings (only names of subRules)
+func (r *Rules) StringArgs() []string {
+	s := make([]string, len(r.Args))
+	for i, a := range r.Args {
+		s[i] = a.Name
+	}
+
+	return s
 }
