@@ -19,7 +19,7 @@ type Pack struct {
 	Name, Import, Path string
 
 	Files   []File
-	Content []string
+	Content SS
 
 	Defs      map[string]*Def
 	Cont      Counter
@@ -33,6 +33,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 		Cont:      Counter{},
 		Generated: map[string]*Rules{},
 		Import:    imp,
+		Content:   SS{},
 	}
 
 	p.Import = imp
@@ -196,9 +197,13 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 // from ewerithing else.
 func (p *Pack) CollectContent() {
 	for i, f := range p.Files {
-		var content []string
+		var content SS
 		content, p.Files[i].Blocks = CollectContent(f.Raw)
-		p.Content = append(p.Content, content...)
+		p.Content.Join(content)
+	}
+
+	for k := range p.Content {
+		p.Cont.Increment(k)
 	}
 }
 

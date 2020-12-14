@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"gogen/dirs"
 	"gogen/str"
 	"strings"
@@ -21,7 +20,7 @@ type Def struct {
 }
 
 // NDef ...
-func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont Counter) (d *Def) {
+func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter) (d *Def) {
 	def := &Def{Imports: Imp{}}
 
 	var ln dirs.Line
@@ -59,7 +58,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 			if !rules.IsExternal() {
 				rules.Pack = name
 			}
-			args = append(args, rules.GetNameSub())
+			args = append(args, rules.OriginalName)
 			def.Deps = append(def.Deps, rules)
 		} else {
 			def.Code += internal + "\n"
@@ -77,7 +76,7 @@ func NDef(name string, content []string, raw dirs.Paragraph, imports Imp, cont C
 }
 
 // ParseLine turns line of code to line that is usable for external generation and one for internal
-func (d *Def) ParseLine(line dirs.Line, name string, content, args []string, imports Imp) (code, exCode string, dep bool) {
+func (d *Def) ParseLine(line dirs.Line, name string, content SS, args []string, imports Imp) (code, exCode string, dep bool) {
 	var (
 		ln, i int
 		lnl   = len(line.Content)
@@ -121,7 +120,7 @@ o:
 			continue o
 		}
 
-		for _, c := range content {
+		for c := range content {
 			ln = len(c)
 
 			if !str.IsTheIdent(cont, c, i) {
@@ -174,7 +173,7 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 	for i, a := range rules.Args {
 		if !a.IsName {
 			c := a.Copy()
-			c.OldName = d.Args[i].Name
+			c.NestedName = d.Args[i].Name
 			deps = append(deps, c)
 			continue
 		}
@@ -189,21 +188,21 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 		}
 	}
 
-	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+rules.GetNameSub())
+	result = strings.ReplaceAll(result, Gibrich+d.Name, rules.SubName)
+
+	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+rules.SubName)
 
 	for _, dp := range deps {
 		val, ok := done[dp.Summarize()]
-		if !ok {
-			dp.Idx = cont.Increment(dp.OldName)
-			dp.UpdateNameSub()
-		} else {
-			val.OldName = dp.OldName
+		if ok {
+			val.NestedName = dp.NestedName
 			dp = val
+		} else {
+			dp.Idx = cont.Increment(dp.OriginalName)
+			dp.UpdateNameSub()
 		}
-		if rules.Name == "Vec" && rules.Pack == "templates" {
-			fmt.Println(dp.OldName)
-		}
-		result = strings.ReplaceAll(result, Gibrich+dp.OldName, dp.GetNameSub())
+
+		result = strings.ReplaceAll(result, Gibrich+dp.NestedName, dp.SubName)
 	}
 
 	return

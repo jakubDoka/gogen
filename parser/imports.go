@@ -77,7 +77,8 @@ func (i Imp) Build(ignore SS) string {
 
 // CollectContent collects all package content that can be imported from other package.
 // This is important for external generation.
-func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) {
+func CollectContent(raw dirs.Paragraph) (content SS, blocks []BlockSlice) {
+	content = SS{}
 	var inBlock bool
 	var current BlockSlice
 	for i, line := range raw {
@@ -105,12 +106,14 @@ func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) 
 			defs := str.ParseSimpleGoDef(l)
 			if len(defs) == 0 {
 				if str.EndsWith(str.RemInv(line.Content), "(") { // multiline def
-					content = append(content, str.ParseMultilineGoDef(raw.GetContent()[i+1:])...)
+					for _, d := range str.ParseMultilineGoDef(raw.GetContent()[i+1:]) {
+						content.Add(d)
+					}
 				}
 			} else {
 				for _, def := range defs {
 					if str.IsUpper(def[0]) {
-						content = append(content, def)
+						content.Add(def)
 					}
 				}
 			}

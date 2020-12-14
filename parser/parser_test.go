@@ -100,7 +100,7 @@ func TestCollectContent(t *testing.T) {
 		")",
 	)
 
-	result := []string{"Hello", "Mom", "Hell", "Fri", "All", "Fll"}
+	result := SS{"Hello": true, "Mom": true, "Hell": true, "Fri": true, "All": true, "Fll": true}
 	resultBlock := BlockSlice{
 		Definition,
 		dirs.Paragraph{
@@ -111,8 +111,8 @@ func TestCollectContent(t *testing.T) {
 
 	res, block := CollectContent(test)
 
-	for i := range res {
-		if res[i] != result[i] {
+	for k := range res {
+		if !result[k] {
 			t.Errorf("%v != %v", result, res)
 		}
 	}

@@ -14,7 +14,7 @@ type Rules struct {
 
 	IsName bool
 
-	Name, Pack, OldName string
+	Name, Pack, OriginalName, SubName, NestedName string
 
 	Line dirs.Line
 }
@@ -47,6 +47,14 @@ func NRules(line dirs.Line, isDef bool, sig ...struct{}) (r *Rules) {
 	rw = rw[:len(rw)-1] // excluding ">"
 
 	args := str.RevSplit(rw, ",", -1, str.Block{"<", ">"})
+	if !isDef {
+		r.SubName, args = args[len(args)-1], args[:len(args)-1]
+	} else {
+		r.SubName = r.Name
+	}
+
+	r.OriginalName = r.SubName
+	r.NestedName = r.SubName
 
 	for _, a := range args {
 		line.Content = a
@@ -61,17 +69,9 @@ func NRules(line dirs.Line, isDef bool, sig ...struct{}) (r *Rules) {
 		if len(r.Args) == 0 {
 			Exit(line, "template rules has less then 1 argument, template is redundant")
 		}
-		r.Args = append(r.Args, &Rules{Name: r.Name, IsName: true})
 	}
 
-	r.OldName = r.GetNameSub()
-
 	return
-}
-
-// GetNameSub return template name substitute
-func (r *Rules) GetNameSub() string {
-	return r.Args[len(r.Args)-1].Name
 }
 
 // UpdateNameSub updates name substitute so there is no name collizion
@@ -79,7 +79,7 @@ func (r *Rules) UpdateNameSub() {
 	if r.Idx == 0 {
 		return
 	}
-	r.Args[len(r.Args)-1].Name = r.GetNameSub() + strconv.Itoa(r.Idx)
+	r.SubName = r.OriginalName + strconv.Itoa(r.Idx)
 }
 
 // IsExternal returns whether definition is external
@@ -90,7 +90,7 @@ func (r *Rules) IsExternal() bool {
 // Summarize returns string that is used to determinate whether template is already generated
 func (r *Rules) Summarize() (res string) {
 	res = r.Name
-	for _, a := range r.Args[:len(r.Args)-1] {
+	for _, a := range r.Args {
 		res += a.Name
 	}
 
@@ -109,10 +109,12 @@ func (r *Rules) Copy() *Rules {
 
 // StringArgs returns args as slice of strings (only names of subRules)
 func (r *Rules) StringArgs() []string {
-	s := make([]string, len(r.Args))
+	s := make([]string, len(r.Args)+1)
 	for i, a := range r.Args {
 		s[i] = a.Name
 	}
+
+	s[len(s)-1] = r.Name
 
 	return s
 }

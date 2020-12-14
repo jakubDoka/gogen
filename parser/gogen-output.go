@@ -16,3 +16,10 @@ delete(n, val)
 return
 }
 
+// Join joins o with n
+func (n SS) Join(o SS) {
+for k := range o {
+n[k] = true
+}
+}
+

@@ -18,6 +18,13 @@ func (n Set) Rem(val string) (ok bool) {
 	return
 }
 
+// Join joins o with n
+func (n Set) Join(o Set) {
+	for k := range o {
+		n[k] = true
+	}
+}
+
 //)
 
 //def(
