@@ -89,7 +89,7 @@ func (r *Rules) IsExternal() bool {
 
 // Summarize returns string that is used to determinate whether template is already generated
 func (r *Rules) Summarize() (res string) {
-	res = r.Name
+	res = r.Name + r.Pack
 	for _, a := range r.Args {
 		res += a.Name
 	}

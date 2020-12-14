@@ -186,6 +186,7 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 				p.Cont,
 			)
 			p.Defs[df.Name] = df
+			p.Cont.Increment(df.Name)
 		}
 	}
 
