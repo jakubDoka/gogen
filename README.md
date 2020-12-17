@@ -80,7 +80,11 @@ You can then refer to the templates from package as `(package name).(template na
 
 Last type of block is ign-block that its for ignoring pieces of code. Gogen takes notes about all items in your package, so it can annotate all items with `(package name).` in case of external generation. You may be shadowing something and so if you are not willing to rename shadows you can wrap shadowed code in ign-block. In case you have some huge file in your package and you do not want gogen to bother with that you can put opened ign-block on a beginning of a file.
 
-## advanced generation
+### Regenerating
+
+If you change your template, wether you fix bug or add new feature, you can use `gogen <changed package name> r` to regenerate all packages that depend on this package. Gogen maintains this dependency in json file with path `%GOPATH%/gogen-data/connections.json`, so no search for dependent packages is needed
+
+### Advanced Generation
 
 You can make nested gen requests if you really need. Nesting depth isn't limitless, you can get stackOverflow if you try really hard. So basically you can generate 2D Slice from template like this.
 
@@ -154,6 +158,7 @@ return a
 return b
 }
 ```
+
 # todo
 
 This is a section with listed features that should be implemented, contributors are welcomed
