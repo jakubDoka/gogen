@@ -123,11 +123,13 @@ v[i] = con(i, e)
 }
 
 // Filter leaves only elements for with filter returns true
-func (v IntVec) Filter(filter func(e int) bool) {
+func (v *IntVec) Filter(filter func(e int) bool) {
+dv := *v
+
 var i int
-for _, e := range v {
+for _, e := range dv {
 if filter(e) {
-v[i] = e
+dv[i] = e
 i++
 }
 }

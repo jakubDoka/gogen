@@ -22,7 +22,23 @@ func main() {
 		pack = args[0]
 	}
 
-	parser.NPack(pack, nil)
+	parser.LoadConnections()
+
+	p := parser.NPack(pack, nil)
+
+	if len(args) == 2 && args[1] == "r" { // regenerating all packages that depend on this package
+	o:
+		for p := range parser.Cons.Get(p.Import) {
+			for _, pck := range parser.AllPacks {
+				if p == pck.Import {
+					continue o
+				}
+			}
+			parser.NPack(p, nil)
+		}
+	}
+
+	parser.Cons.Save()
 
 	fmt.Println("Done")
 }

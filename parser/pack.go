@@ -162,11 +162,13 @@ func (p *Pack) LoadImports() (err error) {
 					Exit(line, "self import")
 				}
 
-				if _, ok := AllPacks[name]; ok {
-					continue
+				pck, ok := AllPacks[name]
+				if !ok {
+					pck = NPack(l, &line)
+					AllPacks[name] = pck
 				}
 
-				AllPacks[name] = NPack(l, &line)
+				Cons.Get(pck.Import)[p.Import] = true
 			}
 		}
 	}

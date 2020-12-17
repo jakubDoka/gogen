@@ -152,11 +152,13 @@ func (v Vec) ForEach(con func(i int, e interface{}) interface{}) {
 }
 
 // Filter leaves only elements for with filter returns true
-func (v Vec) Filter(filter func(e interface{}) bool) {
+func (v *Vec) Filter(filter func(e interface{}) bool) {
+	dv := *v
+
 	var i int
-	for _, e := range v {
+	for _, e := range dv {
 		if filter(e) {
-			v[i] = e
+			dv[i] = e
 			i++
 		}
 	}
@@ -208,10 +210,11 @@ func (s *Storage) Insert(value interface{}) int {
 }
 
 // Remove removes a value and frees memory for something else
-func (s *Storage) Remove(id int) {
+func (s *Storage) Remove(id int) (val interface{}) {
 	var nil interface{}
-	if s.vec[id] == nil {
-		return
+	val = s.vec[id]
+	if val == nil {
+		panic("removeing already removed value")
 	}
 
 	s.count--
@@ -219,10 +222,12 @@ func (s *Storage) Remove(id int) {
 
 	s.freeIDs = append(s.freeIDs, id)
 	s.vec[id] = nil
+
+	return val
 }
 
-// Get returns pointer to value
-func (s *Storage) Get(id int) interface{} {
+// Item returns value under the "id"
+func (s *Storage) Item(id int) interface{} {
 	return s.vec[id]
 }
 
@@ -270,7 +275,7 @@ func (s *Storage) Clear() {
 		s.vec[i] = nil
 	}
 
-	s.vec = s.vec[:0]
+	s.vec = s.vec[:1]
 	s.freeIDs = s.freeIDs[:0]
 	s.count = 0
 }
