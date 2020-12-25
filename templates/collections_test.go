@@ -13,5 +13,22 @@ func TestVecSort(t *testing.T) {
 			t.Error(v, "!=", res)
 		}
 	}
-	t.Fail()
+}
+
+func TestVecRemoveSlice(t *testing.T) {
+	v := IntVec{1, 5, 4, 2, 6, 3, 7}
+
+	v.RemoveSlice(2, 5)
+	res := IntVec{1, 5, 3, 7}
+
+	if len(v) != len(res) {
+		t.Error(v, "!=", res)
+	}
+
+	for i, e := range res {
+		if v[i] != e {
+			t.Error(v, "!=", res)
+			return
+		}
+	}
 }

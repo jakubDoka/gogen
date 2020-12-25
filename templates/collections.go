@@ -28,6 +28,71 @@ func (n Set) Join(o Set) {
 //)
 
 //def(
+//rules OrderedMap<string, interface{}>
+//dep Vec<interface{}, Vec>
+
+// OrderedMap stores its items in underlying slice and map just keeps indexes
+type OrderedMap struct {
+	m map[string]int
+	s Vec
+}
+
+// NOrderedMap initializes inner map
+func NOrderedMap() OrderedMap {
+	return OrderedMap{
+		m: map[string]int{},
+	}
+}
+
+// Value ...
+func (o *OrderedMap) Value(key string) (val interface{}, ok bool) {
+	idx, k := o.m[key]
+	if !k {
+		return
+	}
+	return o.s[idx], true
+}
+
+// Put ...
+func (o *OrderedMap) Put(key string, value interface{}) {
+	if i, ok := o.m[key]; ok {
+		o.s[i] = value
+	} else {
+		o.m[key] = len(o.s)
+		o.s = append(o.s, value)
+	}
+}
+
+// Remove can be very slow if map is huge
+func (o *OrderedMap) Remove(key string) (val interface{}, ok bool) {
+	val, ok = o.Value(key)
+	if ok {
+		idx := o.m[key]
+		delete(o.m, key)
+		o.s.Remove(idx)
+		for k, v := range o.m {
+			if v > idx {
+				o.m[k] = v - 1
+			}
+		}
+	}
+	return
+}
+
+// Slice returns underlying slice
+func (o *OrderedMap) Slice() Vec {
+	return o.s
+}
+
+// Index returns index of a key's value
+func (o *OrderedMap) Index(name string) (int, bool) {
+	val, ok := o.m[name]
+	return val, ok
+}
+
+//)
+
+//def(
 //rules Vec<interface{}>
 
 // Vec is a standard Vector type with utility methods
@@ -73,6 +138,15 @@ func (v *Vec) Remove(idx int) (val interface{}) {
 	return val
 }
 
+// RemoveSlice removes sequence of slice
+func (v *Vec) RemoveSlice(start, end int) {
+	dv := *v
+
+	*v = append(dv[:start], dv[end:]...)
+
+	v.Truncate(len(dv) - (end - start))
+}
+
 // PopFront removes first element and returns it
 func (v *Vec) PopFront() interface{} {
 	return v.Remove(0)
@@ -89,6 +163,12 @@ func (v *Vec) Insert(idx int, val interface{}) {
 	*v = append(append(append(make(Vec, 0, len(dv)+1), dv[:idx]...), val), dv[idx:]...)
 }
 
+// InsertSlice inserts slice to given index
+func (v *Vec) InsertSlice(idx int, val []interface{}) {
+	dv := *v
+	*v = append(append(append(make(Vec, 0, len(dv)+1), dv[:idx]...), val...), dv[idx:]...)
+}
+
 // Reverse reverses content of slice
 func (v Vec) Reverse() {
 	for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
@@ -103,6 +183,9 @@ func (v Vec) Last() interface{} {
 
 // Sort is quicksort for Vec, because this is part of a template comp function is necessary
 func (v Vec) Sort(comp func(a, b interface{}) bool) {
+	if len(v) < 2 {
+		return
+	}
 	ps := make(IntVec, 2, len(v))
 	ps[0], ps[1] = -1, len(v)
 
@@ -275,7 +358,7 @@ func (s *Storage) Clear() {
 		s.vec[i] = nil
 	}
 
-	s.vec = s.vec[:1]
+	s.vec = s.vec[:0]
 	s.freeIDs = s.freeIDs[:0]
 	s.count = 0
 }

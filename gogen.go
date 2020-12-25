@@ -24,15 +24,20 @@ func main() {
 
 	parser.LoadConnections()
 
-	p := parser.NPack(pack, nil)
+	pck := parser.NPack(pack, nil)
 
 	if len(args) == 2 && args[1] == "r" { // regenerating all packages that depend on this package
 	o:
-		for p := range parser.Cons.Get(p.Import) {
+		for p := range parser.Cons.Get(pck.Import) {
 			for _, pck := range parser.AllPacks {
 				if p == pck.Import {
 					continue o
 				}
+			}
+			_, ok := dirs.PackPath(p)
+			if !ok {
+				delete(parser.Cons.Get(pck.Import), p)
+				continue
 			}
 			parser.NPack(p, nil)
 		}

@@ -44,7 +44,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 		if line == nil {
 			line = &dirs.Line{Path: &p.Path, Idx: -1, Content: "none"}
 		}
-		Exit(*line, "package does not exist")
+		Exit(*line, "package does not exist ("+imp+")")
 	}
 
 	p.CollectFiles()

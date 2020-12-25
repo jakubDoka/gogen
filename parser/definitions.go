@@ -49,6 +49,7 @@ func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter
 	}
 
 	args := def.StringArgs()
+	args = append(args, ConstructorPrefix+def.Name)
 
 	for _, line := range raw {
 		internal, external, dep := def.ParseLine(line, name, content, args, imports)
@@ -59,6 +60,7 @@ func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter
 				rules.Pack = name
 			}
 			args = append(args, rules.OriginalName)
+			args = append(args, ConstructorPrefix+rules.OriginalName)
 			def.Deps = append(def.Deps, rules)
 		} else {
 			def.Code += internal + "\n"
@@ -83,7 +85,6 @@ func (d *Def) ParseLine(line dirs.Line, name string, content SS, args []string, 
 		cont  = line.Content
 	)
 
-	args = append(args, ConstructorPrefix+args[len(args)-1])
 	dep = str.StartsWith(cont, DependencyIdent)
 
 	if dep {
@@ -190,6 +191,8 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 
 	result = strings.ReplaceAll(result, Gibrich+d.Name, rules.SubName)
 
+	cont.Increment(rules.SubName)
+
 	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+rules.SubName)
 
 	for _, dp := range deps {
@@ -201,6 +204,8 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 			dp.Idx = cont.Increment(dp.OriginalName)
 			dp.UpdateNameSub()
 		}
+
+		result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+dp.NestedName, ConstructorPrefix+dp.SubName)
 
 		result = strings.ReplaceAll(result, Gibrich+dp.NestedName, dp.SubName)
 	}

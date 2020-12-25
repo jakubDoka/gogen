@@ -44,6 +44,15 @@ dv[len(dv)-1] = nil
 return val
 }
 
+// RemoveSlice removes sequence of slice
+func (v *IntVec) RemoveSlice(start, end int) {
+dv := *v
+
+*v = append(dv[:start], dv[end:]...)
+
+v.Truncate(len(dv) - (end - start))
+}
+
 // PopFront removes first element and returns it
 func (v *IntVec) PopFront() int {
 return v.Remove(0)
@@ -60,6 +69,12 @@ dv := *v
 *v = append(append(append(make(IntVec, 0, len(dv)+1), dv[:idx]...), val), dv[idx:]...)
 }
 
+// InsertSlice inserts slice to given index
+func (v *IntVec) InsertSlice(idx int, val []int) {
+dv := *v
+*v = append(append(append(make(IntVec, 0, len(dv)+1), dv[:idx]...), val...), dv[idx:]...)
+}
+
 // Reverse reverses content of slice
 func (v IntVec) Reverse() {
 for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
@@ -74,6 +89,9 @@ return v[len(v)-1]
 
 // Sort is quicksort for IntVec, because this is part of a template comp function is necessary
 func (v IntVec) Sort(comp func(a, b int) bool) {
+if len(v) < 2 {
+return
+}
 ps := make(IntVec, 2, len(v))
 ps[0], ps[1] = -1, len(v)
 

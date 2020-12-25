@@ -104,4 +104,5 @@ o:
 	return
 }
 
+// Block is pair of strings that restrict some area
 type Block [2]string
