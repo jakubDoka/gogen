@@ -2,12 +2,10 @@ package dirs
 
 import (
 	"bufio"
-	"fmt"
 	"gogen/str"
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -56,26 +54,10 @@ func NormPath(p string) string {
 }
 
 // RecListFiles lists all files with extencion equal to ext
-func RecListFiles(p, ext string) []string {
-	return RecListPaths(p, func(f os.FileInfo) bool {
-		return str.EndsWith(f.Name(), ext)
-	})
-}
-
-// RecListPaths lists all of items filtered by filter
-func RecListPaths(p string, filter func(f os.FileInfo) bool) (res []string) {
-	filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		if filter(info) {
-			res = append(res, path)
-		}
-		return err
-	})
-
-	return
+func RecListFiles(p, ext string) ([]string, error) {
+	return ListPaths(p, func(i os.FileInfo) bool {
+		return !i.IsDir() && str.EndsWith(i.Name(), ext)
+	}, true)
 }
 
 // ListFilePaths returns all paths to files in one directory.
@@ -83,7 +65,7 @@ func RecListPaths(p string, filter func(f os.FileInfo) bool) (res []string) {
 func ListFilePaths(p, ext string) (ps []string, err error) {
 	return ListPaths(p, func(i os.FileInfo) bool {
 		return !i.IsDir() && str.EndsWith(i.Name(), ext)
-	})
+	}, false)
 }
 
 // ListDirPaths returns all paths to dirs in one directory.
@@ -91,12 +73,12 @@ func ListFilePaths(p, ext string) (ps []string, err error) {
 func ListDirPaths(p string) (ps []string, err error) {
 	return ListPaths(p, func(i os.FileInfo) bool {
 		return i.IsDir()
-	})
+	}, false)
 }
 
 // ListPaths returns all paths to all items in directory, filtered
 // There is no recursion.
-func ListPaths(p string, filter func(os.FileInfo) bool) (ps []string, err error) {
+func ListPaths(p string, filter func(os.FileInfo) bool, recursive bool) (ps []string, err error) {
 	infos, err := ioutil.ReadDir(p)
 
 	if err != nil {
@@ -104,8 +86,17 @@ func ListPaths(p string, filter func(os.FileInfo) bool) (ps []string, err error)
 	}
 
 	for _, i := range infos {
+		p := path.Join(p, i.Name())
 		if filter(i) {
-			ps = append(ps, path.Join(p, i.Name()))
+			ps = append(ps, p)
+		}
+		if recursive && i.IsDir() {
+			ns, e := ListPaths(p, filter, true)
+			if e != nil {
+				err = e
+				continue
+			}
+			ps = append(ps, ns...)
 		}
 	}
 

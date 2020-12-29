@@ -18,22 +18,20 @@ import (
 type Pack struct {
 	Name, Import, Path string
 
-	Files   []File
-	Content SS
+	Files []File
 
 	Defs      map[string]*Def
-	Cont      Counter
-	Generated map[string]*Rules
+	Content   Content
+	Generated map[string]*Request
 }
 
 // NPack creates new package, package can recursively create dependent packages
 func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p := &Pack{
 		Defs:      map[string]*Def{},
-		Cont:      Counter{},
-		Generated: map[string]*Rules{},
+		Content:   Content{},
+		Generated: map[string]*Request{},
 		Import:    imp,
-		Content:   SS{},
 	}
 
 	p.Import = imp
@@ -75,25 +73,25 @@ func (p *Pack) Generate() (err error) {
 
 	requests, imports := p.CollectGenRequests()
 	for len(requests) != 0 {
-		rls := requests[0]
+		r := requests[0]
 
-		u := rls.Summarize()
+		u := r.Summarize()
 		if _, ok := p.Generated[u]; ok {
 			requests = requests[1:]
 			continue
 		} else {
-			p.Generated[u] = rls
+			p.Generated[u] = r
 		}
 
-		if rls.IsExternal() {
-			pack, ok := AllPacks[rls.Pack]
+		if r.Pack != p.Name {
+			pack, ok := AllPacks[r.Pack]
 			if !ok {
-				Exit(rls.Line, "nonexistant package")
+				Exit(r.Line, "nonexistant package")
 			}
 
-			def, ok = pack.Defs[rls.Name]
+			def, ok = pack.Defs[r.Name]
 			if !ok {
-				Exit(rls.Line, nonexistant)
+				Exit(r.Line, nonexistant)
 			}
 
 			if !def.ImportSelf {
@@ -102,9 +100,9 @@ func (p *Pack) Generate() (err error) {
 				ignore.Rem(pack.Import)
 			}
 		} else {
-			def, ok = p.Defs[rls.Name]
+			def, ok = p.Defs[r.Name]
 			if !ok {
-				Exit(rls.Line, nonexistant)
+				Exit(r.Line, nonexistant)
 			}
 
 			ignore.Add(p.Import)
@@ -112,7 +110,7 @@ func (p *Pack) Generate() (err error) {
 
 		imports.Append(def.Imports)
 
-		result, deps := def.Produce(rls, p.Cont, p.Generated)
+		result, deps := def.Produce(r, p.Content, p.Generated)
 		requests = append(deps, requests[1:]...)
 
 		content += result
@@ -133,7 +131,7 @@ func (p *Pack) Generate() (err error) {
 }
 
 // CollectGenRequests ...
-func (p *Pack) CollectGenRequests() (req []*Rules, imports Imp) {
+func (p *Pack) CollectGenRequests() (req []*Request, imports Imp) {
 	imports = Imp{}
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Generators) {
@@ -142,7 +140,7 @@ func (p *Pack) CollectGenRequests() (req []*Rules, imports Imp) {
 				if str.StartsWith(line.Content, "!") {
 					imports.Add(line.Content[1:])
 				} else {
-					req = append(req, NRules(line, false))
+					req = append(req, NRequest(p.Name, line, false))
 				}
 			}
 		}
@@ -185,10 +183,9 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 				p.Content,
 				b.Raw,
 				f.Imports,
-				p.Cont,
 			)
 			p.Defs[df.Name] = df
-			p.Cont.Increment(df.Name)
+			p.Content.NameFor(df.Name)
 		}
 	}
 
@@ -200,13 +197,11 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 // from ewerithing else.
 func (p *Pack) CollectContent() {
 	for i, f := range p.Files {
-		var content SS
+		var content []string
 		content, p.Files[i].Blocks = CollectContent(f.Raw)
-		p.Content.Join(content)
-	}
-
-	for k := range p.Content {
-		p.Cont.Increment(k)
+		for _, c := range content {
+			p.Content.NameFor(c)
+		}
 	}
 }
 

@@ -3,92 +3,99 @@ package parser
 import (
 	"gogen/dirs"
 	"gogen/str"
-	"strconv"
 )
 
 // Rules are template rules, they can be part of a template definition, dependency or template request
 type Rules struct {
-	Args []*Rules
+	Args []string
 
-	Idx int
-
-	IsName bool
-
-	Name, Pack, OriginalName, SubName, NestedName string
+	Name, Pack string
 
 	Line dirs.Line
 }
 
 // NRules take line and parses a Rules, pas true if you need to parse definition rules
-func NRules(line dirs.Line, isDef bool, sig ...struct{}) (r *Rules) {
-	nr := len(sig) == 0
+func NRules(line dirs.Line) (r *Rules) {
 	r = &Rules{Line: line}
 
-	rw := line.Content
+	raw := str.RemInv(line.Content)
 
-	if nr {
-		rw = str.RemInv(rw)
+	r.Name, raw = str.SplitToTwo(raw, '<')
+	if raw == "" {
+		Exit(line, "missing rules structure")
 	}
 
-	r.Name, rw = str.SplitToTwo(rw, '<')
-	if rw == "" {
-		if nr {
+	raw = raw[:len(raw)-1] // excluding ">"
+
+	r.Args = str.RevSplit(raw, ",", -1)
+
+	return
+}
+
+// Request is code generation request. It supports nesting.
+type Request struct {
+	Args []*Request
+
+	End bool
+
+	Name, Pack, SubName, NestedSubstitute, OriginalSub string
+
+	Line dirs.Line
+}
+
+// NRequest creates new request, this can fail and exit program
+func NRequest(pack string, line dirs.Line, recursive bool) (r *Request) {
+	r = &Request{Line: line}
+
+	raw := line.Content
+
+	if !recursive {
+		raw = str.RemInv(raw)
+	}
+
+	r.Name, raw = str.SplitToTwo(raw, '<')
+	if raw == "" {
+		if !recursive {
 			Exit(line, "missing rules structure")
 		}
-		r.IsName = true
+
+		r.End = true
+
 		return
 	}
 
 	pck, name := str.SplitToTwo(r.Name, '.')
 	if name != "" {
 		r.Name, r.Pack = name, pck
+	} else {
+		r.Pack = pack
 	}
 
-	rw = rw[:len(rw)-1] // excluding ">"
+	raw = raw[:len(raw)-1] // excluding ">"
 
-	args := str.RevSplit(rw, ",", -1, str.Block{"<", ">"})
-	if !isDef {
-		r.SubName, args = args[len(args)-1], args[:len(args)-1]
+	args := str.RevSplit(raw, ",", -1, str.Block{"<", ">"})
+	l := len(args) - 1
+
+	if !recursive {
+		r.SubName, args = args[l], args[:l]
 	} else {
 		r.SubName = r.Name
 	}
 
-	r.OriginalName = r.SubName
-	r.NestedName = r.SubName
+	r.OriginalSub = r.SubName
+	r.NestedSubstitute = r.SubName
 
 	for _, a := range args {
 		line.Content = a
-		n := NRules(line, true, struct{}{})
-		if isDef && nr && !n.IsName {
-			Exit(line, "nested definition not allowed")
-		}
+		n := NRequest(pack, line, true)
 		r.Args = append(r.Args, n)
-	}
-
-	if isDef {
-		if len(r.Args) == 0 {
-			Exit(line, "template rules has less then 1 argument, template is redundant")
-		}
 	}
 
 	return
 }
 
-// UpdateNameSub updates name substitute so there is no name collizion
-func (r *Rules) UpdateNameSub() {
-	if r.Idx == 0 {
-		return
-	}
-	r.SubName = r.OriginalName + strconv.Itoa(r.Idx)
-}
-
-// IsExternal returns whether definition is external
-func (r *Rules) IsExternal() bool {
-	return r.Pack != ""
-}
-
 // Summarize returns string that is used to determinate whether template is already generated
-func (r *Rules) Summarize() (res string) {
+func (r *Request) Summarize() (res string) {
 	res = r.Name + r.Pack
 	for _, a := range r.Args {
 		res += a.Name
@@ -98,17 +105,17 @@ func (r *Rules) Summarize() (res string) {
 }
 
 // Copy copies Rules, this is necessary sa Rules contains slice
-func (r *Rules) Copy() *Rules {
+func (r *Request) Copy() *Request {
 	nr := *r
-	nr.Args = make([]*Rules, len(r.Args))
+	nr.Args = make([]*Request, len(r.Args))
 	for i := range nr.Args {
 		nr.Args[i] = r.Args[i].Copy()
 	}
 	return &nr
 }
 
-// StringArgs returns args as slice of strings (only names of subRules)
-func (r *Rules) StringArgs() []string {
+// StringArgs returns args as slice of strings (only names of subRequest)
+func (r *Request) StringArgs() []string {
 	s := make([]string, len(r.Args)+1)
 	for i, a := range r.Args {
 		s[i] = a.Name

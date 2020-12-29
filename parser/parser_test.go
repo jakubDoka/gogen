@@ -111,7 +111,7 @@ func TestCollectContent(t *testing.T) {
 
 	res, block := CollectContent(test)
 
-	for k := range res {
+	for _, k := range res {
 		if !result[k] {
 			t.Errorf("%v != %v", result, res)
 		}

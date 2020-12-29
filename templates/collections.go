@@ -29,12 +29,11 @@ func (n Set) Join(o Set) {
 
 //def(
 //rules OrderedMap<string, interface{}>
-//dep Vec<interface{}, Vec>
 
 // OrderedMap stores its items in underlying slice and map just keeps indexes
 type OrderedMap struct {
 	m map[string]int
-	s Vec
+	s []interface{}
 }
 
 // NOrderedMap initializes inner map
@@ -69,7 +68,7 @@ func (o *OrderedMap) Remove(key string) (val interface{}, ok bool) {
 	if ok {
 		idx := o.m[key]
 		delete(o.m, key)
-		o.s.Remove(idx)
+		o.s = append(o.s[:idx], o.s[idx+1:]...)
 		for k, v := range o.m {
 			if v > idx {
 				o.m[k] = v - 1
@@ -80,7 +79,7 @@ func (o *OrderedMap) Remove(key string) (val interface{}, ok bool) {
 }
 
 // Slice returns underlying slice
-func (o *OrderedMap) Slice() Vec {
+func (o *OrderedMap) Slice() []interface{} {
 	return o.s
 }
 
@@ -88,6 +87,14 @@ func (o *OrderedMap) Slice() Vec {
 func (o *OrderedMap) Index(name string) (int, bool) {
 	val, ok := o.m[name]
 	return val, ok
+}
+
+// Clear removes all elements
+func (o *OrderedMap) Clear() {
+	for k := range o.m {
+		delete(o.m, k)
+	}
+	o.s = o.s[:0]
 }
 
 //)

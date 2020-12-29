@@ -3,6 +3,7 @@ package parser
 import (
 	"gogen/dirs"
 	"gogen/str"
+	"strconv"
 )
 
 // ExtractImps collects all imports in a file and saves them to a map
@@ -77,8 +78,7 @@ func (i Imp) Build(ignore SS) string {
 
 // CollectContent collects all package content that can be imported from other package.
 // This is important for external generation.
-func CollectContent(raw dirs.Paragraph) (content SS, blocks []BlockSlice) {
-	content = SS{}
+func CollectContent(raw dirs.Paragraph) (content []string, blocks []BlockSlice) {
 	var inBlock bool
 	var current BlockSlice
 	for i, line := range raw {
@@ -107,14 +107,12 @@ func CollectContent(raw dirs.Paragraph) (content SS, blocks []BlockSlice) {
 			if len(defs) == 0 {
 				if str.EndsWith(str.RemInv(line.Content), "(") { // multiline def
 					for _, d := range str.ParseMultilineGoDef(raw.GetContent()[i+1:]) {
-						content.Add(d)
+						content = append(content, d)
 					}
 				}
 			} else {
-				for _, def := range defs {
-					if str.IsUpper(def[0]) {
-						content.Add(def)
-					}
+				for _, d := range defs {
+					content = append(content, d)
 				}
 			}
 
@@ -124,12 +122,18 @@ func CollectContent(raw dirs.Paragraph) (content SS, blocks []BlockSlice) {
 	return
 }
 
-// Counter is used for counting definitions so they can get unique name
-type Counter map[string]int
+// Content stores go definitions names and returns unique names for shadows within one package
+type Content map[string]int
 
-// Increment increments a counter and returns previous value
-func (c Counter) Increment(name string) int {
-	defer func() { c[name]++ }()
+// NameFor returns unique name
+func (c Content) NameFor(name string) string {
+	val := c[name]
 
-	return c[name]
+	c[name]++
+
+	if val == 0 {
+		return name
+	}
+
+	return c.NameFor(name + strconv.Itoa(c[name]))
 }

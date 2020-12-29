@@ -9,9 +9,9 @@ import (
 // Def is a template definition, it has methods to return
 // template results and also stores needed imports
 type Def struct {
-	*Rules
+	Rules
 
-	Deps    []*Rules
+	Deps    []*Request
 	Imports Imp
 
 	ImportSelf bool
@@ -20,12 +20,13 @@ type Def struct {
 }
 
 // NDef ...
-func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter) (d *Def) {
-	def := &Def{Imports: Imp{}}
+func NDef(pack string, content Content, raw dirs.Paragraph, imports Imp) (d *Def) {
+	def := &Def{
+		Imports: Imp{},
+	}
 
-	var ln dirs.Line
-	j := 0
-	for _, line := range raw {
+	// Extracting rules
+	for i, line := range raw {
 		line.Content = str.RemInvStart(line.Content)
 		if str.StartsWith(line.Content, RulesIdent) {
 			_, line.Content = str.SplitToTwo(line.Content, ' ')
@@ -34,34 +35,29 @@ func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter
 				return
 			}
 
-			ln = line
-			def.Rules = NRules(line, true)
-		} else {
-			raw[j] = line
-			j++
+			def.Rules = *NRules(line)
+			raw = append(raw[:i], raw[i+1:]...)
+			break
 		}
 	}
 
-	raw = raw[:j]
-
 	if def.Name == "" {
-		Exit(ln, "missing template rules")
+		Exit(raw[0], "template is missing rules annotation")
 	}
 
-	args := def.StringArgs()
-	args = append(args, ConstructorPrefix+def.Name)
+	def.Pack = pack
+	args := def.Args
+	args = append(args, ConstructorPrefix+def.Name, def.Name)
 
 	for _, line := range raw {
-		internal, external, dep := def.ParseLine(line, name, content, args, imports)
+		internal, external, dep := def.ParseLine(line, content, args, imports)
 		if dep {
 			line.Content = internal
-			rules := NRules(line, false)
-			if !rules.IsExternal() {
-				rules.Pack = name
-			}
-			args = append(args, rules.OriginalName)
-			args = append(args, ConstructorPrefix+rules.OriginalName)
-			def.Deps = append(def.Deps, rules)
+			dep := NRequest(pack, line, false)
+
+			args = append(args, dep.SubName)
+			args = append(args, ConstructorPrefix+dep.SubName)
+			def.Deps = append(def.Deps, dep)
 		} else {
 			def.Code += internal + "\n"
 			def.ExtCode += external + "\n"
@@ -70,7 +66,7 @@ func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter
 	}
 
 	if def.ImportSelf {
-		def.Imports[name] = imports[name]
+		def.Imports[pack] = imports[pack]
 	}
 
 	d = def
@@ -78,7 +74,7 @@ func NDef(name string, content SS, raw dirs.Paragraph, imports Imp, cont Counter
 }
 
 // ParseLine turns line of code to line that is usable for external generation and one for internal
-func (d *Def) ParseLine(line dirs.Line, name string, content SS, args []string, imports Imp) (code, exCode string, dep bool) {
+func (d *Def) ParseLine(line dirs.Line, content Content, args []string, imports Imp) (code, exCode string, dep bool) {
 	var (
 		ln, i int
 		lnl   = len(line.Content)
@@ -128,7 +124,7 @@ o:
 				continue
 			}
 			d.ImportSelf = true
-			exCode += name + "."
+			exCode += d.Pack + "."
 			continue o
 		}
 
@@ -154,32 +150,44 @@ o:
 }
 
 // Produce forms a template
-func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (result string, deps []*Rules) {
-
-	if len(rules.Args) != len(d.Args) {
-		Exit(rules.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(rules.Args))
+func (d *Def) Produce(r *Request, content Content, done map[string]*Request) (result string, deps []*Request) {
+	if len(r.Args) != len(d.Args) {
+		Exit(r.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(r.Args))
 	}
 
-	if rules.IsExternal() {
+	if r.Pack != d.Pack {
 		result = d.ExtCode
 	} else {
 		result = d.Code
 	}
 
-	deps = make([]*Rules, len(d.Deps))
+	// we need to take copy as Requests can get modified
+	deps = make([]*Request, len(d.Deps))
 	for i, d := range d.Deps {
 		deps[i] = d.Copy()
 	}
 
-	for i, a := range rules.Args {
-		if !a.IsName {
+	// replacing identifier
+	result = strings.ReplaceAll(result, Gibrich+d.Name, r.SubName)
+	// replacing possible constructor
+	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+r.SubName)
+	// as this will be placed to the package, content needs to be updated
+	content.NameFor(r.SubName)
+
+	for i, a := range r.Args {
+		// in case of nested argument we add it to dependencies and continue
+		if !a.End {
 			c := a.Copy()
-			c.NestedName = d.Args[i].Name
+			c.NestedSubstitute = d.Args[i]
 			deps = append(deps, c)
 			continue
 		}
-		ga := Gibrich + d.Args[i].Name
-		result = strings.ReplaceAll(result, ga, a.Name)
+
+		ga := Gibrich + d.Args[i]
+
+		result = strings.ReplaceAll(result, ga, a.Name) // simple argument can be replaced immediately
+
+		// Substituting //dep annotation arguments with inputted template
 		for _, dp := range deps {
 			for i := range dp.Args {
 				if dp.Args[i].Name == ga {
@@ -189,25 +197,26 @@ func (d *Def) Produce(rules *Rules, cont Counter, done map[string]*Rules) (resul
 		}
 	}
 
-	result = strings.ReplaceAll(result, Gibrich+d.Name, rules.SubName)
+	for i := 0; i < len(deps); i++ {
+		dp := deps[i]
 
-	cont.Increment(rules.SubName)
-
-	result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+d.Name, ConstructorPrefix+rules.SubName)
-
-	for _, dp := range deps {
 		val, ok := done[dp.Summarize()]
+
+		var sub string
+		// if template with matching arguments is already generated reuse it and dump the current dependency
 		if ok {
-			val.NestedName = dp.NestedName
-			dp = val
+			sub = val.SubName
+			deps = append(deps[:i], deps[i+1:]...)
+			i--
 		} else {
-			dp.Idx = cont.Increment(dp.OriginalName)
-			dp.UpdateNameSub()
+			dp.SubName = content.NameFor(dp.OriginalSub)
+			sub = dp.SubName
 		}
 
-		result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+dp.NestedName, ConstructorPrefix+dp.SubName)
-
-		result = strings.ReplaceAll(result, Gibrich+dp.NestedName, dp.SubName)
+		// its getting little extrem but we also have to take dependant constructor into account
+		result = strings.ReplaceAll(result, Gibrich+ConstructorPrefix+dp.NestedSubstitute, ConstructorPrefix+sub)
+		// and fynally we are replacing the dependency identifier
+		result = strings.ReplaceAll(result, Gibrich+dp.NestedSubstitute, sub)
 	}
 
 	return

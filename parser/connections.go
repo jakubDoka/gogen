@@ -38,6 +38,7 @@ func LoadConnections() {
 // Connections stores all connections for bulk regenerations
 type Connections map[string]map[string]bool
 
+// Get makes sure key always returns map and not nil, even if its empty map
 func (c Connections) Get(pack string) map[string]bool {
 	val, ok := c[pack]
 	if !ok {
