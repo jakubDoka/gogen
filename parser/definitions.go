@@ -24,7 +24,6 @@ func NDef(pack string, content Content, raw dirs.Paragraph, imports Imp) (d *Def
 	def := &Def{
 		Imports: Imp{},
 	}
-
 	// Extracting rules
 	for i, line := range raw {
 		line.Content = str.RemInvStart(line.Content)
@@ -46,8 +45,8 @@ func NDef(pack string, content Content, raw dirs.Paragraph, imports Imp) (d *Def
 	}
 
 	def.Pack = pack
-	args := def.Args
-	args = append(args, ConstructorPrefix+def.Name, def.Name)
+
+	args := append(def.Args, ConstructorPrefix+def.Name, def.Name)
 
 	for _, line := range raw {
 		internal, external, dep := def.ParseLine(line, content, args, imports)
@@ -118,6 +117,7 @@ o:
 		}
 
 		for c := range content {
+
 			ln = len(c)
 
 			if !str.IsTheIdent(cont, c, i) {
@@ -150,12 +150,12 @@ o:
 }
 
 // Produce forms a template
-func (d *Def) Produce(r *Request, content Content, done map[string]*Request) (result string, deps []*Request) {
+func (d *Def) Produce(pack string, r *Request, content Content, done map[string]*Request) (result string, deps []*Request) {
 	if len(r.Args) != len(d.Args) {
 		Exit(r.Line, "incorrect amount of arguments, expected: %d got: %d", len(d.Args), len(r.Args))
 	}
 
-	if r.Pack != d.Pack {
+	if pack != d.Pack {
 		result = d.ExtCode
 	} else {
 		result = d.Code

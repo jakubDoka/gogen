@@ -100,6 +100,33 @@ func (o *OrderedMap) Clear() {
 //)
 
 //def(
+//rules Stack<interface{}>
+
+// Stack ...
+type Stack []interface{}
+
+// Push appends the value
+func (s *Stack) Push(v interface{}) {
+	*s = append(*s, v)
+}
+
+// Pop pos an element but does not take in to account the memory leak
+func (s *Stack) Pop() interface{} {
+	sv := *s
+	l := len(sv) - 1
+	val := sv[l]
+	*s = sv[:l]
+	return val
+}
+
+// CanPop returns whether you can use Pop without out of bounds panic
+func (s Stack) CanPop() bool {
+	return len(s) != 0
+}
+
+//)
+
+//def(
 //rules Vec<interface{}>
 
 // Vec is a standard Vector type with utility methods

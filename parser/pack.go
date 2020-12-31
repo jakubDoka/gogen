@@ -62,8 +62,8 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 // Generate generates all code
 func (p *Pack) Generate() (err error) {
 	var (
-		content string
-		ignore  = SS{}
+		content         string
+		ignore, already = SS{}, SS{}
 
 		def *Def
 		ok  bool
@@ -94,10 +94,11 @@ func (p *Pack) Generate() (err error) {
 				Exit(r.Line, nonexistant)
 			}
 
-			if !def.ImportSelf {
-				ignore.Add(pack.Import)
-			} else {
+			if def.ImportSelf {
+				already.Add(pack.Import)
 				ignore.Rem(pack.Import)
+			} else if !already[pack.Import] {
+				ignore.Add(pack.Import)
 			}
 		} else {
 			def, ok = p.Defs[r.Name]
@@ -107,10 +108,9 @@ func (p *Pack) Generate() (err error) {
 
 			ignore.Add(p.Import)
 		}
-
 		imports.Append(def.Imports)
 
-		result, deps := def.Produce(r, p.Content, p.Generated)
+		result, deps := def.Produce(p.Name, r, p.Content, p.Generated)
 		requests = append(deps, requests[1:]...)
 
 		content += result
@@ -185,8 +185,12 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 				f.Imports,
 			)
 			p.Defs[df.Name] = df
-			p.Content.NameFor(df.Name)
+
 		}
+	}
+
+	for k := range p.Defs {
+		p.Content.NameFor(k)
 	}
 
 	return
