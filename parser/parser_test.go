@@ -1,7 +1,8 @@
 package parser
 
+// most of the tests are performed on test packages but that are not included as they are full of garbage
+
 import (
-	"encoding/json"
 	"gogen/dirs"
 	"testing"
 )
@@ -135,10 +136,4 @@ func CompareBlocks(a, b BlockSlice) (bl bool) {
 	}
 
 	return true
-}
-
-func TestNPack(t *testing.T) {
-	pck := NPack("gogen/test", nil)
-	bts, _ := json.MarshalIndent(pck, "", "  ")
-	t.Error(string(bts))
 }

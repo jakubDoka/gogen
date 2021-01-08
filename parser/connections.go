@@ -15,24 +15,24 @@ var ConnectionFile = "connections.json"
 // DataDir stores all data related to gogen
 var DataDir = "gogen-data"
 
-// Cons ...
-var Cons = Connections{}
-
 // LoadConnections ...
-func LoadConnections() {
+func LoadConnections() Connections {
+	c := Connections{}
 	p := path.Join(dirs.Gopath, DataDir, ConnectionFile)
 	if !dirs.Exists(p) {
-		return
+		return c
 	}
 	bts, err := ioutil.ReadFile(p)
 	if err != nil {
 		fmt.Println("failed to load connections:", err)
-		return
+		return c
 	}
-	err = json.Unmarshal(bts, &Cons)
+	err = json.Unmarshal(bts, &c)
 	if err != nil {
 		fmt.Println("failed to parse connections:", err)
 	}
+
+	return c
 }
 
 // Connections stores all connections for bulk regenerations

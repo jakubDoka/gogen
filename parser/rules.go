@@ -5,7 +5,7 @@ import (
 	"gogen/str"
 )
 
-// Rules are template rules, they can be part of a template definition, dependency or template request
+// Rules is template rules, it determinate how does template get generated
 type Rules struct {
 	Args []string
 
@@ -14,7 +14,7 @@ type Rules struct {
 	Line dirs.Line
 }
 
-// NRules take line and parses a Rules, pas true if you need to parse definition rules
+// NRules takes line and parses a Rules
 func NRules(line dirs.Line) (r *Rules) {
 	r = &Rules{Line: line}
 
@@ -32,7 +32,7 @@ func NRules(line dirs.Line) (r *Rules) {
 	return
 }
 
-// Request is code generation request. It supports nesting.
+// Request is code generation request. It supports nesting. Biggest mess of all time.
 type Request struct {
 	Args []*Request
 
@@ -43,7 +43,7 @@ type Request struct {
 	Line dirs.Line
 }
 
-// NRequest creates new request, this can fail and exit program
+// NRequest creates new request from line
 func NRequest(pack string, line dirs.Line, recursive bool) (r *Request) {
 	r = &Request{Line: line}
 

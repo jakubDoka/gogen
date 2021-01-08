@@ -220,6 +220,7 @@ func (v Vec) Sort(comp func(a, b interface{}) bool) {
 	if len(v) < 2 {
 		return
 	}
+	// Template is part  of its self, how amazing
 	ps := make(IntVec, 2, len(v))
 	ps[0], ps[1] = -1, len(v)
 
@@ -304,14 +305,14 @@ func (v Vec) Find(find func(e interface{}) bool) (idx int, res interface{}) {
 // Storage generates ids witch makes no need to use hashing
 type Storage struct {
 	vec      []interface{}
-	freeIDs  []int
-	occupied []int
+	freeIDs  []int32
+	occupied []int32
 	count    int
 	outdated bool
 }
 
-// Insert inserts an value
-func (s *Storage) Insert(value interface{}) int {
+// Insert inserts an value and returns unique "ID"
+func (s *Storage) Insert(value interface{}) int32 {
 	s.count++
 	s.outdated = true
 
@@ -323,11 +324,11 @@ func (s *Storage) Insert(value interface{}) int {
 		return id
 	}
 	s.vec = append(s.vec, value)
-	return len(s.vec) - 1
+	return int32(len(s.vec)) - 1
 }
 
 // Remove removes a value and frees memory for something else
-func (s *Storage) Remove(id int) (val interface{}) {
+func (s *Storage) Remove(id int32) (val interface{}) {
 	var nil interface{}
 	val = s.vec[id]
 	if val == nil {
@@ -344,12 +345,12 @@ func (s *Storage) Remove(id int) (val interface{}) {
 }
 
 // Item returns value under the "id"
-func (s *Storage) Item(id int) interface{} {
+func (s *Storage) Item(id int32) interface{} {
 	return s.vec[id]
 }
 
 // Used returns whether id is used
-func (s *Storage) Used(id int) bool {
+func (s *Storage) Used(id int32) bool {
 	var nil interface{}
 	return s.vec[id] != nil
 }
@@ -365,10 +366,10 @@ func (s *Storage) Update() {
 	var nil interface{}
 
 	s.outdated = false
-
 	s.occupied = s.occupied[:0]
-	for i, v := range s.vec {
-		if v != nil {
+	l := int32(len(s.vec))
+	for i := int32(0); i < l; i++ {
+		if s.vec[i] != nil {
 			s.occupied = append(s.occupied, i)
 		}
 	}
@@ -376,7 +377,7 @@ func (s *Storage) Update() {
 
 // Occupied return all occupied ids in storage, this method panics if Storage is outdated
 // See Update method.
-func (s *Storage) Occupied() []int {
+func (s *Storage) Occupied() []int32 {
 	if s.outdated {
 		panic("accessing occupied when storage is outdated")
 	}

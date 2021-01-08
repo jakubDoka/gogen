@@ -22,28 +22,28 @@ func main() {
 		pack = args[0]
 	}
 
-	parser.LoadConnections()
+	cons := parser.LoadConnections()
 
-	pck := parser.NPack(pack, nil)
+	pck := parser.NPack(pack, nil, cons, map[string]*parser.Pack{})
 
 	if len(args) == 2 && args[1] == "r" { // regenerating all packages that depend on this package
 	o:
-		for p := range parser.Cons.Get(pck.Import) {
-			for _, pck := range parser.AllPacks {
+		for p := range cons.Get(pck.Import) {
+			for _, pck := range pck.Others {
 				if p == pck.Import {
 					continue o
 				}
 			}
 			_, ok := dirs.PackPath(p)
 			if !ok {
-				delete(parser.Cons.Get(pck.Import), p)
+				delete(cons.Get(pck.Import), p)
 				continue
 			}
-			parser.NPack(p, nil)
+			parser.NPack(p, nil, cons, pck.Others)
 		}
 	}
 
-	parser.Cons.Save()
+	cons.Save()
 
 	fmt.Println("Done")
 }

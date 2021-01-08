@@ -2,6 +2,7 @@ package dirs
 
 import (
 	"bufio"
+	"fmt"
 	"gogen/str"
 	"io/ioutil"
 	"os"
@@ -15,12 +16,13 @@ var Gopath string
 func init() {
 	env, ok := os.LookupEnv("GOPATH")
 	if !ok {
-		panic("missing GOPATH")
+		fmt.Println("You don't have a gopath environment variable set, that is requiremant for gogen to work properly.")
+		os.Exit(1)
 	}
 	Gopath = env
 }
 
-// PackPath returns go package path or error if it does not exist
+// PackPath returns go package path from its import or false if it does not exist
 func PackPath(imp string) (string, bool) {
 	res := path.Join(Gopath, "src", imp)
 	if Exists(res) {
@@ -30,7 +32,8 @@ func PackPath(imp string) (string, bool) {
 	return "", false
 }
 
-// PackImport return package import from path
+// PackImport return package import from path assuming given path is in
+// Gopath
 func PackImport(p string) string {
 	ln := len(path.Join(Gopath, "src")) + 1
 	return p[ln:]
@@ -103,8 +106,8 @@ func ListPaths(p string, filter func(os.FileInfo) bool, recursive bool) (ps []st
 	return
 }
 
-// FileAsLines returns file as lines and excludes line s above and
-// line with package and also returns name of package
+// FileAsLines returns file as lines and excludes lines above including
+// line with package and also returns name of package the file belongs to
 func FileAsLines(p string) (lines Paragraph, name string, err error) {
 	file, err := os.Open(p)
 	if err != nil {
@@ -162,13 +165,14 @@ func (p Paragraph) Copy() Paragraph {
 	return np
 }
 
-// Line is file line, it stores its index and path for easy logging
+// Line is file line, it stores its index and path for easy tracing
 type Line struct {
 	Path    *string
 	Idx     int
 	Content string
 }
 
+// String for standard logging
 func (l *Line) String() string {
 	return l.Content
 }

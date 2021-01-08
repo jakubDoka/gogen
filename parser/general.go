@@ -40,9 +40,6 @@ var (
 
 	// Name of a output file
 	OutputFile = "gogen-output.go"
-
-	// Its better because i don't have to pass map everywhere
-	AllPacks = map[string]*Pack{}
 )
 
 // IsBlockStart returns whether string is any block start
@@ -72,10 +69,10 @@ func IsBlockEnd(st string) (bool, Block) {
 // Exit prints an error and exits application, because this is just console app
 // it is nice simplification that avoids tedious error handling
 func Exit(line dirs.Line, message string, args ...interface{}) {
-	fmt.Printf("file: %s\nline: %d\nerror: %s\n",
+	fmt.Printf("error: %s\n\t%s:%d\n",
+		fmt.Sprintf(message, args...),
 		*line.Path,
 		line.Idx,
-		fmt.Sprintf(message, args...),
 	)
 	os.Exit(2)
 }

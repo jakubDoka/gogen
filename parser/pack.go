@@ -20,18 +20,24 @@ type Pack struct {
 
 	Files []File
 
+	Others    map[string]*Pack
+	Cons      Connections
 	Defs      map[string]*Def
 	Content   Content
 	Generated map[string]*Request
 }
 
-// NPack creates new package, package can recursively create dependent packages
-func NPack(imp string, line *dirs.Line) (pack *Pack) {
+// NPack creates new package, package can recursively create dependent packages, cons and others cannot be nil,
+// they are important for recursion. Others for packages to access each other, and connections for saving dependency
+// bounds.
+func NPack(imp string, line *dirs.Line, cons Connections, others map[string]*Pack) (pack *Pack) {
 	p := &Pack{
 		Defs:      map[string]*Def{},
 		Content:   Content{},
 		Generated: map[string]*Request{},
 		Import:    imp,
+		Others:    others,
+		Cons:      cons,
 	}
 
 	p.Import = imp
@@ -40,7 +46,7 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 	p.Path, ok = dirs.PackPath(imp)
 	if !ok {
 		if line == nil {
-			line = &dirs.Line{Path: &p.Path, Idx: -1, Content: "none"}
+			line = &dirs.Line{Path: &p.Path, Idx: -1, Content: "target package does not have line from where it is imported"}
 		}
 		Exit(*line, "package does not exist ("+imp+")")
 	}
@@ -53,13 +59,18 @@ func NPack(imp string, line *dirs.Line) (pack *Pack) {
 
 	p.ResolveDefBlocks()
 
-	p.Generate()
+	err := p.Generate()
+	if err != nil {
+		line := dirs.Line{Path: &p.Path, Idx: -1, Content: "error does not relate to code"}
+		Exit(line, "error while generating code: %v", err)
+	}
 
+	others[p.Name] = p
 	pack = p
 	return
 }
 
-// Generate generates all code
+// Generate generates all code and saves it to file
 func (p *Pack) Generate() (err error) {
 	var (
 		content         string
@@ -71,6 +82,7 @@ func (p *Pack) Generate() (err error) {
 		nonexistant = "template does not exist"
 	)
 
+	// for some reason am poping it like this, i just remember that otherwise it will not work
 	requests, imports := p.CollectGenRequests()
 	for len(requests) != 0 {
 		r := requests[0]
@@ -83,8 +95,8 @@ func (p *Pack) Generate() (err error) {
 			p.Generated[u] = r
 		}
 
-		if r.Pack != p.Name {
-			pack, ok := AllPacks[r.Pack]
+		if r.Pack != p.Name { // external package
+			pack, ok := p.Others[r.Pack]
 			if !ok {
 				Exit(r.Line, "nonexistant package")
 			}
@@ -150,7 +162,7 @@ func (p *Pack) CollectGenRequests() (req []*Request, imports Imp) {
 
 // LoadImports creates all dependant packages, even if they are not used, code inside packages can be generated,
 // this makes it easy to bulk update as you can import all targeted packages to the root package
-func (p *Pack) LoadImports() (err error) {
+func (p *Pack) LoadImports() {
 	for _, file := range p.Files {
 		for _, block := range file.ExtractBlocks(Imports) {
 			for _, line := range block.Raw {
@@ -160,22 +172,19 @@ func (p *Pack) LoadImports() (err error) {
 					Exit(line, "self import")
 				}
 
-				pck, ok := AllPacks[name]
+				pck, ok := p.Others[name]
 				if !ok {
-					pck = NPack(l, &line)
-					AllPacks[name] = pck
+					pck = NPack(l, &line, p.Cons, p.Others)
 				}
 
-				Cons.Get(pck.Import)[p.Import] = true
+				p.Cons.Get(pck.Import)[p.Import] = true
 			}
 		}
 	}
-
-	return
 }
 
-// ResolveDefBlocks ...
-func (p *Pack) ResolveDefBlocks() (err error) {
+// ResolveDefBlocks turns all def blocks to Defs so they can be easily used multiple times
+func (p *Pack) ResolveDefBlocks() {
 	for _, f := range p.Files {
 		for _, b := range f.ExtractBlocks(Definition) {
 			df := NDef(
@@ -192,8 +201,6 @@ func (p *Pack) ResolveDefBlocks() (err error) {
 	for k := range p.Defs {
 		p.Content.NameFor(k)
 	}
-
-	return
 }
 
 // CollectContent collects all names of definitions in package and all
