@@ -92,6 +92,7 @@ func (v IntVec) Sort(comp func(a, b int) bool) {
 	if len(v) < 2 {
 		return
 	}
+	// Template is part  of its self, how amazing
 	ps := make(IntVec, 2, len(v))
 	ps[0], ps[1] = -1, len(v)
 
