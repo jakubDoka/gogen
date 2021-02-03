@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"gogen/dirs"
-	"gogen/parser"
 	"os"
+
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/parser"
 )
 
 func main() {

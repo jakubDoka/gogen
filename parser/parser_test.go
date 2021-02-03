@@ -3,8 +3,9 @@ package parser
 // most of the tests are performed on test packages but that are not included as they are full of garbage
 
 import (
-	"gogen/dirs"
 	"testing"
+
+	"github.com/jakubDoka/gogen/dirs"
 )
 
 func TestExtractImps(t *testing.T) {

@@ -3,11 +3,12 @@ package dirs
 import (
 	"bufio"
 	"fmt"
-	"gogen/str"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/jakubDoka/gogen/str"
 )
 
 // Gopath is value of GOPATH environment variable

@@ -3,17 +3,18 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"gogen/dirs"
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/jakubDoka/gogen/dirs"
 )
 
 // ConnectionFile is name of a file where connection data is stored
 var ConnectionFile = "connections.json"
 
 // DataDir stores all data related to gogen
-var DataDir = "gogen-data"
+var DataDir = "github.com/jakubDoka/gogen-data"
 
 // LoadConnections ...
 func LoadConnections() Connections {

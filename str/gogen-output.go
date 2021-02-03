@@ -1,7 +1,7 @@
 package str
 
 import (
-	"gogen/templates"
+	"github.com/jakubDoka/gogen/templates"
 )
 
 // Vec is a standard Vector type with utility methods
@@ -171,7 +171,6 @@ func (v Vec) Find(find func(e string) bool) (idx int, res string) {
 	return
 }
 
-
 // String is a standard Vector type with utility methods
 type String []rune
 
@@ -338,4 +337,3 @@ func (v String) Find(find func(e rune) bool) (idx int, res rune) {
 	idx = -1
 	return
 }
-

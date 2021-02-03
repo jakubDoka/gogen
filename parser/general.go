@@ -2,9 +2,10 @@ package parser
 
 import (
 	"fmt"
-	"gogen/dirs"
-	"gogen/str"
 	"os"
+
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/str"
 )
 
 // Block is pair of Start and end used whe parsing
@@ -39,7 +40,7 @@ var (
 	ConstructorPrefix = "N"
 
 	// Name of a output file
-	OutputFile = "gogen-output.go"
+	OutputFile = "github.com/jakubDoka/gogen-output.go"
 )
 
 // IsBlockStart returns whether string is any block start

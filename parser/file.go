@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"gogen/dirs"
+	"github.com/jakubDoka/gogen/dirs"
 )
 
 // File is a file... wow

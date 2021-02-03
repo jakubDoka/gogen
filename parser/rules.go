@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"gogen/dirs"
-	"gogen/str"
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/str"
 )
 
 // Rules is template rules, it determinate how does template get generated

@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"gogen/dirs"
-	"gogen/str"
 	"strconv"
+
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/str"
 )
 
 // ExtractImps collects all imports in a file and saves them to a map,

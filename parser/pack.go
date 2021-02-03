@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"gogen/dirs"
-	"gogen/str"
 	"path"
+
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/str"
 )
 
 /*imp(

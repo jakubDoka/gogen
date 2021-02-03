@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"gogen/dirs"
-	"gogen/str"
 	"strings"
+
+	"github.com/jakubDoka/gogen/dirs"
+	"github.com/jakubDoka/gogen/str"
 )
 
 // Def is a template definition, it has methods to return
