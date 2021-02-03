@@ -1,3 +1,3 @@
-module github.com/jakubDokagogen
+module github.com/jakubDoka/gogen
 
 go 1.15
