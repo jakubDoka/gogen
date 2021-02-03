@@ -145,6 +145,21 @@ func (v *Vec) Clear() {
 	v.Truncate(0)
 }
 
+// Rewrite revrites elements from index to o values
+func (v Vec) Rewrite(o Vec, idx int) {
+	copy(v[idx:], o)
+}
+
+// Len implements VertexData interface
+func (v Vec) Len() int {
+	return len(v)
+}
+
+// UClear does not care about memory leaks, it just sets length to 0
+func (v *Vec) UClear() {
+	*v = (*v)[:0]
+}
+
 // Truncate in comparison to truncating by bracket operator also sets all
 // forgoten elements to default value, witch is useful if this is slice of pointers
 // Vec will have length you specify
@@ -156,6 +171,20 @@ func (v *Vec) Truncate(l int) {
 	}
 
 	*v = dv[:l]
+}
+
+// Extend extends vec size by amount so then len(Vec) = len(Vec) + amount
+func (v *Vec) Extend(amount int) {
+	vv := *v
+	l := len(vv) + amount
+	if cap(vv) >= l { // no need to allocate
+		*v = vv[:l]
+		return
+	}
+
+	nv := make(Vec, l)
+	copy(nv, vv)
+	*v = nv
 }
 
 // Remove removes element and returns it
@@ -295,6 +324,35 @@ func (v Vec) Find(find func(e interface{}) bool) (idx int, res interface{}) {
 
 	idx = -1
 	return
+}
+
+//BiSearch performs a binary search on Ves assuming it is sorted. cmp consumer should
+// return 0 if a == b equal, 1 if a > b and 2 if b > a, even if value wos not found it returns
+// it returns closest index and false
+func (v Vec) BiSearch(value interface{}, cmp func(a, b interface{}) uint8) (int, bool) {
+	start, end := 0, len(v)
+	for {
+		mid := start + (end-start)/2
+		switch cmp(v[mid], value) {
+		case 0:
+			return mid, true
+		case 1:
+			end = mid + 0
+		case 2:
+			start = mid + 1
+		}
+
+		if start == end {
+			return start, start < len(v) && cmp(v[start], value) == 0
+		}
+	}
+}
+
+// BiInsert inserts inserts value in a way that keeps vec sorted, binary search is used to determinate
+// where to insert
+func (v *Vec) BiInsert(value interface{}, cmp func(a, b interface{}) uint8) {
+	i, _ := v.BiSearch(value, cmp)
+	v.Insert(i, value)
 }
 
 //)
